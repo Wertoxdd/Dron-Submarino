@@ -1,0 +1,211 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" font-family="Arial, Helvetica, sans-serif" role="img" aria-labelledby="titulo">
+<!--
+  dron.svg: dron submarino (80C552) ejecutando C2 A5 D2 A3 E2 A4 F0.
+  Solo SVG y CSS @keyframes: sin JavaScript, sin fuentes ni imágenes externas.
+
+  TABLA DE TIEMPOS (única fuente de tiempos). Bucle T = 25 s; 1 s del sistema = 1 s de animación.
+  Cada elemento animado por fases tiene un único @keyframes global de 25 s cuyos porcentajes
+  valen t x 4 (1 s = 4%), así que cada fase empieza exactamente donde termina la anterior.
+
+  Fase  Inicio  Fin    Keyframes    Instr.    PWM0  PWM1  Giro_Avance  Subir_Bajar  Profundidad
+  0      0 s     1 s   0% a 4%      (espera)  0%    0%    00           0            0 m
+  1      1 s     4 s   4% a 16%     C2        70%   0%    00           0            0 a 5 m (*)
+  2      4 s     9 s   16% a 36%    A5        30%   50%   11           0            5 m
+  3      9 s    11 s   36% a 44%    D2        30%   50%   10           0            5 m
+  4     11 s    14 s   44% a 56%    A3        30%   50%   11           0            5 m
+  5     14 s    16 s   56% a 64%    E2        30%   50%   01           0            5 m
+  6     16 s    20 s   64% a 80%    A4        30%   50%   11           0            5 m
+  7     20 s    23 s   80% a 92%    F0        70%   0%    00           1            5 a 0 m (*)
+  8     23 s    25 s   92% a 100%   (reposo)  0%    0%    00           0            0 m
+
+  (*) Los 3 s de descenso y los 3 s de ascenso NO vienen en el enunciado: son valores de animación.
+  Botón Marcha/Paro: pulsado de 0,6 s a 1 s (keyframes 2.4% a 4%).
+  Display de tiempo: cuenta atrás por segundos en A, D y E; en C2 y F0 no hay tiempo y muestra
+  el parámetro de la instrucción (2 y 0). En reposo los dos displays están apagados.
+  Escala: 30 px = 1 m, por tanto 5 m = 150 px.
+  Fondo: cercano 40 px/s (12 s de avance = 480 px = 1 tramo) y lejano 20 px/s (240 px = 1 onda);
+  como el desplazamiento total es un periodo exacto, el bucle cierra sin salto.
+  Animaciones libres, independientes de la fase: olas (5 s) y giro de hélices con periodo = 21 / PWM
+  (30% = 0,70 s; 50% = 0,42 s; 70% = 0,30 s): más rápidas cuanto mayor es el ciclo de trabajo.
+
+  OBSTÁCULO. En este programa la roca alta del fondo pasa por debajo del dron (hacia t = 18 s):
+  el sónar frontal no la tiene delante y no hay aborto.
+  VARIANTE B (no activa, solo documentada): con un obstáculo a menos de 0,2 m en t = 18 s, durante A4,
+  la fase 6 sería 16 a 18 s, la fase 7 (ascenso) 18 a 21 s y la fase 8 21 a 25 s.
+-->
+<title id="titulo">Dron submarino ejecutando el programa C2 A5 D2 A3 E2 A4 F0</title>
+<style>
+text{fill:#1f3a5f}
+.m{font-family:Consolas,Menlo,monospace;font-weight:bold}
+/* Animaciones de fase: todas duran 25 s y sus porcentajes son t x 4 (ver la tabla). */
+.v{opacity:0;animation:25s step-end infinite}     /* visible solo en sus fases */
+.s{opacity:.12;animation:25s step-end infinite}   /* segmento: .12 apagado, 1 encendido */
+.l{animation:25s linear infinite}                 /* movimiento lineal entre keyframes */
+.rep,.p1off,.sb0{opacity:1}                       /* estado de reposo si no hay animación */
+.rep{animation-name:rep}@keyframes rep{0%,92%{opacity:1}4%{opacity:0}}                     /* reposo: fases 0 y 8 */
+.c2{animation-name:c2}@keyframes c2{0%,16%{opacity:0}4%{opacity:1}}                        /* fase 1 */
+.a5{animation-name:a5}@keyframes a5{0%,36%{opacity:0}16%{opacity:1}}                       /* fase 2 */
+.d2{animation-name:d2}@keyframes d2{0%,44%{opacity:0}36%{opacity:1}}                       /* fase 3 */
+.a3{animation-name:a3}@keyframes a3{0%,56%{opacity:0}44%{opacity:1}}                       /* fase 4 */
+.e2{animation-name:e2}@keyframes e2{0%,64%{opacity:0}56%{opacity:1}}                       /* fase 5 */
+.a4{animation-name:a4}@keyframes a4{0%,80%{opacity:0}64%{opacity:1}}                       /* fase 6 */
+.f0{animation-name:f0}@keyframes f0{0%,92%{opacity:0}80%{opacity:1}}                       /* fase 7 */
+.av{animation-name:av}@keyframes av{0%,36%,56%,80%{opacity:0}16%,44%,64%{opacity:1}}       /* avanza: fases 2, 4 y 6 */
+.gi{animation-name:gi}@keyframes gi{0%,44%,64%{opacity:0}36%,56%{opacity:1}}               /* gira: fases 3 y 5 */
+.nav{animation-name:nav}@keyframes nav{0%,80%{opacity:0}16%{opacity:1}}                    /* a 5 m, fases 2 a 6: PWM0 30%, PWM1 50% */
+.vert{animation-name:vert}@keyframes vert{0%,16%,92%{opacity:0}4%,80%{opacity:1}}          /* sube o baja, fases 1 y 7: PWM0 70% */
+.p1off{animation-name:p1off}@keyframes p1off{0%,80%{opacity:1}16%{opacity:0}}              /* PWM1 0% y Giro_Avance 00 */
+.sb0{animation-name:sb0}@keyframes sb0{0%,92%{opacity:1}80%{opacity:0}}                    /* Subir_Bajar 0 */
+.btn{animation-name:btn}@keyframes btn{0%,4%{opacity:0}2.4%{opacity:1}}                    /* pulsación de Marcha/Paro: 0,6 a 1 s */
+.x1af{animation-name:x1af}@keyframes x1af{0%,36%,92%{opacity:.12}4%,44%{opacity:1}}        /* display de acción, segmentos a y f */
+.x1bc{animation-name:x1bc}@keyframes x1bc{0%,56%,80%{opacity:.12}16%,64%{opacity:1}}       /* display de acción, segmentos b y c */
+.x1d{animation-name:x1d}@keyframes x1d{0%,16%,44%,64%{opacity:.12}4%,36%,56%{opacity:1}}   /* display de acción, segmento d */
+.x1e{animation-name:x1e}@keyframes x1e{0%,92%{opacity:.12}4%{opacity:1}}                   /* display de acción, segmento e */
+.x1g{animation-name:x1g}@keyframes x1g{0%,92%{opacity:.12}16%{opacity:1}}                  /* display de acción, segmento g */
+.x2ad{animation-name:x2ad}@keyframes x2ad{0%,20%,32%,40%,52%,60%,76%,92%{opacity:.12}4%,24%,36%,44%,56%,68%,80%{opacity:1}} /* display de tiempo, segmentos a y d */
+.x2b{animation-name:x2b}@keyframes x2b{0%,16%,92%{opacity:.12}4%,20%{opacity:1}}           /* display de tiempo, segmento b */
+.x2c{animation-name:x2c}@keyframes x2c{0%,28%,36%,48%,56%,72%,92%{opacity:.12}16%,32%,40%,52%,60%,76%{opacity:1}} /* display de tiempo, segmento c */
+.x2e{animation-name:x2e}@keyframes x2e{0%,16%,32%,40%,52%,60%,76%,92%{opacity:.12}4%,28%,36%,48%,56%,72%,80%{opacity:1}} /* display de tiempo, segmento e */
+.x2f{animation-name:x2f}@keyframes x2f{0%,24%,68%,92%{opacity:.12}16%,64%,80%{opacity:1}}  /* display de tiempo, segmento f */
+.x2g{animation-name:x2g}@keyframes x2g{0%,32%,40%,52%,60%,76%{opacity:.12}4%,36%,44%,56%,64%{opacity:1}} /* display de tiempo, segmento g */
+.xdp{animation-name:xdp}@keyframes xdp{0%,16%,92%{opacity:.12}4%,80%{opacity:1}}           /* dp de los dos displays: sube o baja */
+.prof{animation-name:prof}@keyframes prof{0%,4%{transform:translateY(0)}16%,80%{transform:translateY(150px)}92%,100%{transform:translateY(0)}} /* profundidad: 5 m = 150 px */
+.cerca{animation-name:cerca}@keyframes cerca{0%,16%{transform:translateX(0)}36%,44%{transform:translateX(-200px)}56%,64%{transform:translateX(-320px)}80%,100%{transform:translateX(-480px)}} /* fondo cercano: 40 px/s al avanzar */
+.lejos{animation-name:lejos}@keyframes lejos{0%,16%{transform:translateX(0)}36%,44%{transform:translateX(-100px)}56%,64%{transform:translateX(-160px)}80%,100%{transform:translateX(-240px)}} /* fondo lejano: 20 px/s al avanzar */
+.rd{animation-name:rd}@keyframes rd{0%,36%{transform:rotate(0deg)}44%,100%{transform:rotate(360deg)}} /* flecha de giro a la derecha: 1 vuelta en la fase 3 */
+.re{animation-name:re}@keyframes re{0%,56%{transform:rotate(0deg)}64%,100%{transform:rotate(-360deg)}} /* flecha de giro a la izquierda: 1 vuelta en la fase 5 */
+/* Animaciones libres: no dependen de la fase. */
+.ola{animation:ola 5s linear infinite}@keyframes ola{to{transform:translateX(-80px)}}
+.g30{animation:gx .7s ease-in-out infinite}.g70{animation:gx .3s ease-in-out infinite}.g50{animation:gy .42s ease-in-out infinite}
+@keyframes gx{0%,100%{transform:scaleX(1)}50%{transform:scaleX(-1)}}
+@keyframes gy{0%,100%{transform:scaleY(1)}50%{transform:scaleY(-1)}}
+</style>
+<defs>
+  <clipPath id="marco"><rect width="800" height="450" rx="12"/></clipPath>
+  <!-- Flecha curva de giro (sentido horario) -->
+  <g id="giro"><path d="M-10 0A10 10 0 1 1 0 10" fill="none" stroke="#1f3a5f" stroke-width="2.5"/><path d="M-7 10l8-5v10z" fill="#1f3a5f"/></g>
+  <!-- Tramo de fondo cercano (480 px): rocas, algas y partículas -->
+  <g id="tramo">
+    <g fill="#93a1b0">
+      <path d="M28 420l8-15 16-5 14 9 6 11z"/>
+      <path d="M140 420l8-60 14-42 16-8 14 20 8 42 8 48z"/> <!-- roca alta: obstáculo que el sónar frontal no ve -->
+      <path d="M262 420l8-12 14-4 12 8 4 8z"/>
+      <path d="M404 420l10-22 18-6 16 10 8 18z"/>
+    </g>
+    <path d="M110 420q-8-9 0-18t0-18M122 420q7-7 0-14t0-14M350 420q-7-8 0-16t0-16M362 420q6-6 0-12t0-12" fill="none" stroke="#5aa772" stroke-width="4" stroke-linecap="round"/>
+    <g fill="#fff" stroke="#8fc1e0">
+      <circle cx="60" cy="130" r="2.5"/><circle cx="150" cy="345" r="2.5"/><circle cx="235" cy="270" r="2.5"/>
+      <circle cx="310" cy="185" r="2.5"/><circle cx="390" cy="115" r="2.5"/><circle cx="440" cy="330" r="2.5"/>
+    </g>
+  </g>
+</defs>
+<g clip-path="url(#marco)">
+  <!-- Cielo, agua con ondas y marcas de profundidad -->
+  <rect width="800" height="450" fill="#f5fafd"/>
+  <path class="ola" d="M-80 80q20-7 40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0V450H-80z" fill="#d2e8f5" stroke="#8fc1e0" stroke-width="1.5"/>
+  <path d="M58 155H800M58 230H800M58 305H800M58 380H800" stroke="#1f3a5f" stroke-opacity=".14" stroke-dasharray="3 6"/>
+  <!-- Fondo marino en paralaje -->
+  <path class="l lejos" d="M0 406q60-18 120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0t120 0V450H0z" fill="#b9d5e6"/>
+  <g class="l cerca">
+    <rect y="420" width="1440" height="30" fill="#ead9a8"/>
+    <use href="#tramo"/><use href="#tramo" x="480"/><use href="#tramo" x="960"/>
+  </g>
+  <!-- Escala de profundidad: 0 a 10 m, marcas cada 2,5 m, con cursor que sigue al dron -->
+  <path d="M52 80V380M46 80h12M46 155h12M46 230h12M46 305h12M46 380h12" stroke="#1f3a5f" stroke-width="1.5"/>
+  <g font-size="11" text-anchor="end">
+    <text x="42" y="84">0 m</text><text x="42" y="159">2,5 m</text><text x="42" y="234">5 m</text><text x="42" y="309">7,5 m</text><text x="42" y="384">10 m</text>
+  </g>
+  <g transform="translate(52 80)"><path class="l prof" d="M5 0l11-6v12z" fill="#f5b301" stroke="#1f3a5f"/></g>
+  <!-- Dron -->
+  <g transform="translate(250 80)"><g class="l prof">
+    <!-- Hélice trasera de avance/giro (PWM1): parada o al 50% -->
+    <path d="M-46 0h-17" stroke="#1f3a5f" stroke-width="3"/>
+    <g transform="translate(-64 0)" fill="#1f3a5f">
+      <ellipse class="v p1off" rx="4" ry="15"/>
+      <g class="v nav"><ellipse class="g50" rx="4" ry="15"/></g>
+    </g>
+    <!-- Hélice vertical de profundidad (PWM0): parada, al 30% o al 70% -->
+    <path d="M0 -16v-14" stroke="#1f3a5f" stroke-width="3"/>
+    <g transform="translate(0 -31)" fill="#1f3a5f">
+      <ellipse class="v rep" rx="19" ry="3.5"/>
+      <g class="v nav"><ellipse class="g30" rx="19" ry="3.5"/></g>
+      <g class="v vert"><ellipse class="g70" rx="19" ry="3.5"/></g>
+    </g>
+    <!-- Cuerpo y cámara frontal -->
+    <rect x="-48" y="-18" width="96" height="36" rx="14" fill="#f5b301" stroke="#1f3a5f" stroke-width="2.5"/>
+    <circle cx="31" r="8" fill="#d2e8f5" stroke="#1f3a5f" stroke-width="2"/>
+    <!-- Indicadores de giro -->
+    <g class="v d2" transform="translate(0 -64)" font-size="13" font-weight="bold">
+      <g transform="translate(-42 0)"><g class="l rd"><use href="#giro"/></g></g>
+      <text x="-24" y="5">Gira dcha</text>
+    </g>
+    <g class="v e2" transform="translate(0 -64)" font-size="13" font-weight="bold">
+      <g transform="translate(-42 0)"><g class="l re"><use href="#giro" transform="scale(-1 1)"/></g></g>
+      <text x="-24" y="5">Gira izda</text>
+    </g>
+  </g></g>
+  <!-- Panel HUD -->
+  <g transform="translate(478 10)">
+    <rect width="312" height="150" rx="10" fill="#fff" stroke="#1f3a5f" stroke-width="1.5"/>
+    <!-- Programa: se resalta la instrucción en curso -->
+    <rect x="8" y="6" width="296" height="24" rx="6" fill="#e8eef4"/>
+    <g fill="#f5b301">
+      <rect class="v c2" x="12" y="8" width="36" height="20" rx="4"/>
+      <rect class="v a5" x="54" y="8" width="36" height="20" rx="4"/>
+      <rect class="v d2" x="96" y="8" width="36" height="20" rx="4"/>
+      <rect class="v a3" x="138" y="8" width="36" height="20" rx="4"/>
+      <rect class="v e2" x="180" y="8" width="36" height="20" rx="4"/>
+      <rect class="v a4" x="222" y="8" width="36" height="20" rx="4"/>
+      <rect class="v f0" x="264" y="8" width="36" height="20" rx="4"/>
+    </g>
+    <g class="m" font-size="12" text-anchor="middle"><text x="30" y="22">C2</text><text x="72" y="22">A5</text><text x="114" y="22">D2</text><text x="156" y="22">A3</text><text x="198" y="22">E2</text><text x="240" y="22">A4</text><text x="282" y="22">F0</text></g>
+    <!-- Displays de 7 segmentos (a-g y dp) -->
+    <rect x="10" y="38" width="118" height="74" rx="6" fill="#14243a"/>
+    <g fill="#ff5a47">
+      <g transform="translate(20 45)"> <!-- acción -->
+        <rect class="s x1af" x="5" width="24" height="6" rx="3"/>
+        <rect class="s x1bc" x="28" y="4" width="6" height="25" rx="3"/>
+        <rect class="s x1bc" x="28" y="31" width="6" height="25" rx="3"/>
+        <rect class="s x1d" x="5" y="54" width="24" height="6" rx="3"/>
+        <rect class="s x1e" y="31" width="6" height="25" rx="3"/>
+        <rect class="s x1af" y="4" width="6" height="25" rx="3"/>
+        <rect class="s x1g" x="5" y="27" width="24" height="6" rx="3"/>
+        <circle class="s xdp" cx="41" cy="57" r="3.5"/>
+      </g>
+      <g transform="translate(74 45)"> <!-- tiempo restante -->
+        <rect class="s x2ad" x="5" width="24" height="6" rx="3"/>
+        <rect class="s x2b" x="28" y="4" width="6" height="25" rx="3"/>
+        <rect class="s x2c" x="28" y="31" width="6" height="25" rx="3"/>
+        <rect class="s x2ad" x="5" y="54" width="24" height="6" rx="3"/>
+        <rect class="s x2e" y="31" width="6" height="25" rx="3"/>
+        <rect class="s x2f" y="4" width="6" height="25" rx="3"/>
+        <rect class="s x2g" x="5" y="27" width="24" height="6" rx="3"/>
+        <circle class="s xdp" cx="41" cy="57" r="3.5"/>
+      </g>
+    </g>
+    <g font-size="9" text-anchor="middle"><text x="37" y="125">Acción</text><text x="91" y="125">Tiempo (hex)</text></g>
+    <!-- Indicadores de estado -->
+    <g font-size="10.5"><text x="140" y="50">PWM0</text><text x="140" y="68">PWM1</text><text x="140" y="86">Giro_Avance</text><text x="140" y="104">Subir_Bajar</text></g>
+    <g class="m" font-size="11">
+      <text class="v rep" x="212" y="50">0% parado</text>
+      <text class="v c2" x="212" y="50">70% baja</text>
+      <text class="v nav" x="212" y="50">30% mantiene</text>
+      <text class="v f0" x="212" y="50">70% sube</text>
+      <text class="v p1off" x="212" y="68">0% parado</text>
+      <text class="v av" x="212" y="68">50% avanza</text>
+      <text class="v gi" x="212" y="68">50% gira</text>
+      <text class="v p1off" x="212" y="86">00 parado</text>
+      <text class="v av" x="212" y="86">11 avanza</text>
+      <text class="v d2" x="212" y="86">10 gira dcha</text>
+      <text class="v e2" x="212" y="86">01 gira izda</text>
+      <text class="v sb0" x="212" y="104">0 baja</text>
+      <text class="v f0" x="212" y="104">1 sube</text>
+    </g>
+    <!-- Botón Marcha/Paro: se ilumina al pulsarlo -->
+    <rect x="140" y="118" width="96" height="22" rx="11" fill="#e8eef4" stroke="#1f3a5f"/>
+    <rect class="v btn" x="140" y="118" width="96" height="22" rx="11" fill="#f5b301" stroke="#1f3a5f"/>
+    <text x="188" y="133" font-size="10.5" text-anchor="middle">Marcha/Paro</text>
+  </g>
+</g>
+<rect x=".5" y=".5" width="799" height="449" rx="12" fill="none" stroke="#b8c7d6"/>
+</svg>
