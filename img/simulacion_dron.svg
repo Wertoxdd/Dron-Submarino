@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 630" width="960" height="630" role="img" aria-labelledby="t d">
+<title id="t">Simulación del funcionamiento del dron submarino</title>
+<desc id="d">Animación del recorrido del dron con el programa de ejemplo C2, A5, D3, A4, F: vista lateral, vista cenital, máquina de estados, displays de siete segmentos y salidas.</desc>
+<defs>
+<style>
+text{font-family:"Segoe UI",Helvetica,Arial,sans-serif;fill:#cfe3f0}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace}
+.h{font-size:13px;font-weight:700;fill:#e6edf3}
+.s{font-size:10px;fill:#8fb2c8}
+.ax{font-size:10px;fill:#7fa3ba}
+.lbl{font-size:11px;fill:#ffd166}
+.nd{font-size:12px;font-weight:700;fill:#e6edf3}
+.ed{font-size:9.5px;fill:#9fc0d4}
+.ln{font-size:12px;fill:#cfe3f0}
+.val{font-size:12px;font-weight:700;fill:#7ee787}
+.snr{font-size:11px;fill:#9ee6f0}
+</style>
+<linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#11577f"/><stop offset="1" stop-color="#06243a"/></linearGradient>
+<pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+<path d="M30 0H0V30" fill="none" stroke="#1f4a68" stroke-width="0.5"/></pattern>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0 0L10 5L0 10z" fill="#8fb2c8"/></marker>
+<marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M0 0L10 5L0 10z" fill="#ffd166"/></marker>
+</defs>
+<rect width="960" height="630" rx="12" fill="#0b141c"/>
+<text x="20" y="21" class="h" style="font-size:15px">Simulación del funcionamiento del dron</text>
+<text x="940" y="21" class="s" text-anchor="end">Programa de ejemplo: C2  A5  D3  A4  F  ·  bucle de 20 s</text>
+<rect x="20" y="28" width="920" height="3" rx="1.5" fill="#1c2b38"/>
+<rect x="20" y="28" width="0" height="3" rx="1.5" fill="#2f81f7"><animate attributeName="width" dur="20s" repeatCount="indefinite" keyTimes="0;1" values="0;920"/></rect>
+<g transform="translate(0,34)">
+<rect x="20" y="20" width="450" height="280" rx="8" fill="#101c26" stroke="#223646"/>
+<clipPath id="ca"><rect x="20" y="20" width="450" height="280" rx="8"/></clipPath>
+<g clip-path="url(#ca)">
+<rect x="20" y="20" width="450" height="50" fill="#1b2733"/>
+<rect x="20" y="70" width="450" height="230" fill="url(#wg)"/>
+<path d="M20 70 Q 50 64 80 70 T 140 70 T 200 70 T 260 70 T 320 70 T 380 70 T 440 70 T 500 70" fill="none" stroke="#7cc4e8" stroke-width="1.5" opacity="0.8"/>
+<line x1="62" y1="70" x2="470" y2="70" stroke="#7cc4e8" stroke-opacity="0.18" stroke-dasharray="3 5"/>
+<text x="28" y="66" class="ax">0 m</text>
+<line x1="62" y1="120" x2="470" y2="120" stroke="#7cc4e8" stroke-opacity="0.18" stroke-dasharray="3 5"/>
+<text x="28" y="123.5" class="ax">2,5 m</text>
+<line x1="62" y1="170" x2="470" y2="170" stroke="#7cc4e8" stroke-opacity="0.18" stroke-dasharray="3 5"/>
+<text x="28" y="173.5" class="ax">5 m</text>
+<line x1="62" y1="220" x2="470" y2="220" stroke="#7cc4e8" stroke-opacity="0.18" stroke-dasharray="3 5"/>
+<text x="28" y="223.5" class="ax">7,5 m</text>
+<line x1="62" y1="270" x2="470" y2="270" stroke="#7cc4e8" stroke-opacity="0.18" stroke-dasharray="3 5"/>
+<text x="28" y="273.5" class="ax">10 m</text>
+<line x1="62" y1="170" x2="470" y2="170" stroke="#ffd166" stroke-opacity="0.55" stroke-dasharray="6 4"/>
+<text x="462" y="164" class="s" text-anchor="end" style="fill:#ffd166">C2 = 5 m</text>
+<g opacity="0"><polygon points="292,142 316,132 342,148 338,196 314,210 292,194" fill="#4b4f55" stroke="#8a9099"/><text x="316" y="226" class="s" text-anchor="middle">Obstáculo</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.6;1" values="0;1;1"/></g>
+<g transform="translate(90,70)"><g><rect x="-34" y="-4.5" width="10" height="9" rx="3" fill="#2b2f33"/><ellipse cx="0" cy="0" rx="25" ry="11" fill="#f2f4f6" stroke="#9aa5b1"/><rect x="-6" y="-18" width="12" height="8" rx="3" fill="#2b2f33"/><circle cx="18" cy="1" r="3.6" fill="#1d3a56" stroke="#7fb4d6"/></g><g opacity="0"><path d="M0 30L0 17M-4.5 24L0 30L4.5 24" fill="none" stroke="#5ad1e6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;1" values="0;1;0;0"/></g><g opacity="0"><path d="M0 -38L0 -25M-4.5 -32L0 -38L4.5 -32" fill="none" stroke="#5ad1e6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;0.85;1" values="0;1;0;0"/></g><g opacity="0"><g fill="none" stroke="#4dd0e1" stroke-width="1.6" stroke-linecap="round"><path d="M30 -6 Q36 0 30 6"/><path d="M36 -11 Q46 0 36 11"/><path d="M42 -16 Q56 0 42 16" /></g><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;0.6;0.675;1" values="0;1;0;1;0;0"/></g><g opacity="0"><g fill="none" stroke="#8a98a5" stroke-width="1.6" stroke-linecap="round"><path d="M30 -6 Q36 0 30 6"/><path d="M36 -11 Q46 0 36 11"/><path d="M42 -16 Q56 0 42 16" /></g><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g><g opacity="0"><g fill="none" stroke="#ff5c5c" stroke-width="1.6" stroke-linecap="round"><path d="M30 -6 Q36 0 30 6"/><path d="M36 -11 Q46 0 36 11"/><path d="M42 -16 Q56 0 42 16" /></g><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.675;0.7;1" values="0;1;0;0"/></g><animateTransform attributeName="transform" type="translate" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;0.45;0.6;0.7;0.85;1" values="90,70;90,70;90,170;215,170;215,170;265,170;265,70;265,70"/></g>
+</g>
+<text x="35" y="38" class="h">Vista lateral</text>
+<text x="455" y="38" class="s" text-anchor="end">eje horizontal = distancia recorrida</text>
+<text x="35" y="287" class="snr mono">Sónar frontal:</text>
+<g opacity="1"><text x="142" y="287" class="snr mono" text-anchor="start">libre</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;1" values="1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">libre</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">en giro: obstáculo ignorado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">d = 2,6 m</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.6;0.625;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">d = 2,0 m</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.625;0.65;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">d = 1,4 m</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.65;0.675;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">d = 0,8 m</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.675;0.7;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">d &lt; 0,2 m: rastreo abortado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;0.85;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="142" y="287" class="snr mono" text-anchor="start">libre</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.85;1" values="0;1;1"/></g>
+<rect x="490" y="20" width="450" height="280" rx="8" fill="#0f3550" stroke="#223646"/>
+<clipPath id="cb"><rect x="490" y="20" width="450" height="280" rx="8"/></clipPath>
+<g clip-path="url(#cb)">
+<rect x="490" y="20" width="450" height="280" fill="url(#grid)"/>
+<ellipse cx="710" cy="218" rx="34" ry="14" fill="#4b4f55" stroke="#8a9099"/>
+<text x="710" y="248" class="s" text-anchor="middle">Obstáculo</text>
+<circle cx="560" cy="120" r="3" fill="#8fb2c8"/><text x="560" y="150" class="s" text-anchor="middle">Inicio</text>
+<path d="M560 120 L710 120 L710 180" fill="none" stroke="#ffd166" stroke-width="2" stroke-linejoin="round" stroke-dasharray="210" stroke-dashoffset="210"><animate attributeName="stroke-dashoffset" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;0.6;0.7;1" values="210;210;60;60;0;0"/></path>
+<text x="635" y="146" class="lbl" text-anchor="middle">A5</text>
+<text x="745" y="172" class="lbl">A4: aborta a los 2 s</text>
+<g opacity="0"><path d="M 730 120 A 20 20 0 0 1 710 140" fill="none" stroke="#ffd166" stroke-width="2" marker-end="url(#arr2)"/><text x="742" y="140" class="lbl">D3</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g>
+<g transform="translate(560,120)"><g transform="rotate(0)"><g><g opacity="0"><polygon points="22,0 78,-22 78,22" fill="#4dd0e1" fill-opacity="0.22"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;0.6;0.675;1" values="0;1;0;1;0;0"/></g><g opacity="0"><polygon points="22,0 78,-22 78,22" fill="#8a98a5" fill-opacity="0.16"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g><g opacity="0"><polygon points="22,0 78,-22 78,22" fill="#ff5c5c" fill-opacity="0.3"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.675;0.7;1" values="0;1;0;0"/></g><ellipse cx="0" cy="0" rx="21" ry="11" fill="#f2f4f6" stroke="#9aa5b1"/><circle cx="-10" cy="-14" r="4.5" fill="#2b2f33"/><circle cx="10" cy="-14" r="4.5" fill="#2b2f33"/><circle cx="-10" cy="14" r="4.5" fill="#2b2f33"/><circle cx="10" cy="14" r="4.5" fill="#2b2f33"/><circle cx="16" cy="0" r="3" fill="#1d3a56" stroke="#7fb4d6"/></g><animateTransform attributeName="transform" type="rotate" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;0;90;90"/></g><animateTransform attributeName="transform" type="translate" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;0.6;0.7;1" values="560,120;560,120;710,120;710,120;710,180;710,180"/></g>
+</g>
+<text x="505" y="38" class="h">Vista cenital</text>
+<text x="925" y="38" class="s" text-anchor="end">recorrido del programa</text>
+<rect x="20" y="320" width="450" height="260" rx="8" fill="#101c26" stroke="#223646"/>
+<text x="35" y="340" class="h">Máquina de estados</text>
+<path d="M131 369 L181 369" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<path d="M279 369 L329 369" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<path d="M365 386 L365 468" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<path d="M395 468 L395 388" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<path d="M338 386 L281 468" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<path d="M331 487 L281 487" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<path d="M183 487 L83 487 L83 388" fill="none" stroke="#8fb2c8" stroke-width="1.3" marker-end="url(#arr)" />
+<text x="157" y="362" class="ed" text-anchor="middle">Marcha</text>
+<text x="305" y="362" class="ed" text-anchor="middle">prof. ok</text>
+<text x="360" y="455" class="ed" text-anchor="end">instr. D/E</text>
+<text x="401" y="432" class="ed" text-anchor="start">instr. A</text>
+<text x="312" y="412" class="ed" text-anchor="end">obstáculo o F</text>
+<text x="305" y="481" class="ed" text-anchor="middle">F</text>
+<text x="90" y="440" class="ed" text-anchor="start">superficie</text>
+<rect x="35" y="352" width="96" height="34" rx="8" fill="#14212d" stroke="#4a6a85"/>
+<rect x="35" y="352" width="96" height="34" rx="8" fill="#2f81f7" stroke="#79b8ff" opacity="0.9"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.85;1" values="0.9;0;0.9;0.9"/></rect>
+<text x="83" y="373" class="nd" text-anchor="middle">IDLE</text>
+<rect x="183" y="352" width="96" height="34" rx="8" fill="#14212d" stroke="#4a6a85"/>
+<rect x="183" y="352" width="96" height="34" rx="8" fill="#2f81f7" stroke="#79b8ff" opacity="0"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;1" values="0;0.9;0;0"/></rect>
+<text x="231" y="373" class="nd" text-anchor="middle">BAJAR (C)</text>
+<rect x="331" y="352" width="96" height="34" rx="8" fill="#14212d" stroke="#4a6a85"/>
+<rect x="331" y="352" width="96" height="34" rx="8" fill="#2f81f7" stroke="#79b8ff" opacity="0"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;0.6;0.7;1" values="0;0.9;0;0.9;0;0"/></rect>
+<text x="379" y="373" class="nd" text-anchor="middle">AVANZAR (A)</text>
+<rect x="183" y="470" width="96" height="34" rx="8" fill="#14212d" stroke="#4a6a85"/>
+<rect x="183" y="470" width="96" height="34" rx="8" fill="#2f81f7" stroke="#79b8ff" opacity="0"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;0.85;1" values="0;0.9;0;0"/></rect>
+<text x="231" y="491" class="nd" text-anchor="middle">SUBIR (F)</text>
+<rect x="331" y="470" width="96" height="34" rx="8" fill="#14212d" stroke="#4a6a85"/>
+<rect x="331" y="470" width="96" height="34" rx="8" fill="#2f81f7" stroke="#79b8ff" opacity="0"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;0.9;0;0"/></rect>
+<text x="379" y="491" class="nd" text-anchor="middle">GIRAR (D/E)</text>
+<text x="35" y="538" class="s">Tras cada acción se lee la siguiente instrucción del programa.</text>
+<text x="35" y="554" class="s">En avance, un obstáculo a menos de 0,2 m lleva a SUBIR; en giro se ignora.</text>
+<rect x="490" y="320" width="450" height="260" rx="8" fill="#101c26" stroke="#223646"/>
+<text x="505" y="340" class="h">Displays y salidas</text>
+<rect x="500" y="348" width="160" height="140" rx="8" fill="#07101a" stroke="#2a4358"/>
+<g transform="translate(516,364)">
+<rect x="6" y="0" width="32" height="7" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.45;0.6;1" values="0.12;1;0.12;1;1"/></rect>
+<rect x="37" y="8" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.7;1" values="0.12;1;0.12;0.12"/></rect>
+<rect x="37" y="46" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.7;1" values="0.12;1;0.12;0.12"/></rect>
+<rect x="6" y="77" width="32" height="7" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;0.45;0.6;1" values="0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="0" y="46" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;1" values="0.12;1;1"/></rect>
+<rect x="0" y="8" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.45;0.6;1" values="0.12;1;0.12;1;1"/></rect>
+<rect x="6" y="38.5" width="32" height="7" rx="2" fill="#ff3b30" opacity="1"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;1" values="1;0.12;1;1"/></rect>
+<circle cx="52" cy="80" r="3.6" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;0.7;0.85;1" values="0.12;1;0.12;1;0.12;0.12"/></circle>
+</g>
+<g transform="translate(590,364)">
+<rect x="6" y="0" width="32" height="7" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.25;0.3;0.4;0.45;0.55;0.65;0.7;1" values="0.12;1;0.12;1;0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="37" y="8" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;0.25;0.7;1" values="0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="37" y="46" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.35;0.4;0.5;0.55;0.7;1" values="0.12;1;0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="6" y="77" width="32" height="7" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.25;0.3;0.4;0.45;0.55;0.65;0.7;1" values="0.12;1;0.12;1;0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="0" y="46" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;0.35;0.4;0.5;0.55;1" values="0.12;1;0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="0" y="8" width="7" height="30" rx="2" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.3;0.6;0.65;1" values="0.12;1;0.12;1;0.12;0.12"/></rect>
+<rect x="6" y="38.5" width="32" height="7" rx="2" fill="#ff3b30" opacity="1"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.4;0.45;0.55;0.6;0.7;1" values="1;0.12;1;0.12;1;0.12;0.12"/></rect>
+<circle cx="52" cy="80" r="3.6" fill="#ff3b30" opacity="0.12"><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;0.7;0.85;1" values="0.12;1;0.12;1;0.12;0.12"/></circle>
+</g>
+<text x="538" y="470" class="s" text-anchor="middle">ACCIÓN (P2)</text>
+<text x="612" y="470" class="s" text-anchor="middle">TIEMPO (P0)</text>
+<text x="680" y="362" class="s">PROGRAMA (MEMORIA DE DATOS)</text>
+<g opacity="0"><rect x="676" y="369" width="250" height="18" rx="4" fill="#ffd166" fill-opacity="0.22"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;1" values="0;1;0;0"/></g>
+<text x="684" y="382" class="ln mono">50h  <tspan style="font-weight:700;fill:#ffd166">C2</tspan>  bajar a 5 m</text>
+<g opacity="0"><rect x="676" y="389" width="250" height="18" rx="4" fill="#ffd166" fill-opacity="0.22"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;1" values="0;1;0;0"/></g>
+<text x="684" y="402" class="ln mono">51h  <tspan style="font-weight:700;fill:#ffd166">A5</tspan>  avanzar 5 s</text>
+<g opacity="0"><rect x="676" y="409" width="250" height="18" rx="4" fill="#ffd166" fill-opacity="0.22"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g>
+<text x="684" y="422" class="ln mono">52h  <tspan style="font-weight:700;fill:#ffd166">D3</tspan>  girar dcha. 3 s</text>
+<g opacity="0"><rect x="676" y="429" width="250" height="18" rx="4" fill="#ffd166" fill-opacity="0.22"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.6;0.7;1" values="0;1;0;0"/></g>
+<text x="684" y="442" class="ln mono">53h  <tspan style="font-weight:700;fill:#ffd166">A4</tspan>  avanzar 4 s</text>
+<g opacity="0"><rect x="676" y="449" width="250" height="18" rx="4" fill="#ffd166" fill-opacity="0.22"/><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;1" values="0;1;1"/></g>
+<text x="684" y="462" class="ln mono">54h  <tspan style="font-weight:700;fill:#ffd166">F </tspan>  fin: subir</text>
+<line x1="500" y1="500" x2="930" y2="500" stroke="#223646"/>
+<text x="505" y="520" class="ln mono">PWM0 (profundidad)</text>
+<text x="505" y="538" class="ln mono">PWM1 (giro/avance)</text>
+<text x="505" y="556" class="ln mono">Giro_Avance (P1.7, P1.6)</text>
+<text x="505" y="574" class="ln mono">Subir_Bajar (P1.5)</text>
+<g opacity="1"><text x="750" y="520" class="val mono" text-anchor="start">0 %  parado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;1" values="1;0;0"/></g>
+<g opacity="0"><text x="750" y="520" class="val mono" text-anchor="start">70 %  bajando</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.05;0.2;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="520" class="val mono" text-anchor="start">30 %  mantiene prof.</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.7;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="520" class="val mono" text-anchor="start">70 %  subiendo</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;0.85;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="520" class="val mono" text-anchor="start">0 %  parado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.85;1" values="0;1;1"/></g>
+<g opacity="1"><text x="750" y="538" class="val mono" text-anchor="start">0 %  parado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;1" values="1;0;0"/></g>
+<g opacity="0"><text x="750" y="538" class="val mono" text-anchor="start">50 %  avanza</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="538" class="val mono" text-anchor="start">50 %  gira</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="538" class="val mono" text-anchor="start">50 %  avanza</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.6;0.7;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="538" class="val mono" text-anchor="start">0 %  parado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;1" values="0;1;1"/></g>
+<g opacity="1"><text x="750" y="556" class="val mono" text-anchor="start">00  parado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;1" values="1;0;0"/></g>
+<g opacity="0"><text x="750" y="556" class="val mono" text-anchor="start">11  avanza</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.2;0.45;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="556" class="val mono" text-anchor="start">10  gira dcha.</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.45;0.6;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="556" class="val mono" text-anchor="start">11  avanza</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.6;0.7;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="556" class="val mono" text-anchor="start">00  parado</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;1" values="0;1;1"/></g>
+<g opacity="1"><text x="750" y="574" class="val mono" text-anchor="start">0  bajar</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;1" values="1;0;0"/></g>
+<g opacity="0"><text x="750" y="574" class="val mono" text-anchor="start">1  subir</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.7;0.85;1" values="0;1;0;0"/></g>
+<g opacity="0"><text x="750" y="574" class="val mono" text-anchor="start">0  bajar</text><animate attributeName="opacity" calcMode="discrete" dur="20s" repeatCount="indefinite" keyTimes="0;0.85;1" values="0;1;1"/></g>
+</g>
+</svg>
