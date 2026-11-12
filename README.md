@@ -28,16 +28,32 @@ El programa está organizado como una **máquina de estados** (estados – event
 
 ## Simulación
 
-Animación del funcionamiento con un programa de ejemplo (`C2 A5 D3 A4 F`): el dron baja a 5 m, avanza 5 s,
-gira a la derecha 3 s y avanza hasta que el sónar detecta un obstáculo a menos de 0,2 m, momento en que aborta
-el rastreo y sube. Se muestran la vista lateral, la vista cenital, la máquina de estados, los displays de
-siete segmentos y las salidas (PWM0, PWM1, Giro_Avance y Subir_Bajar).
+Animación en bucle (25 s) del funcionamiento con el programa de ejemplo `C2 A5 D2 A3 E2 A4 F0`:
+el dron baja a 5 m, avanza 5 s, gira a la derecha 2 s, avanza 3 s, gira a la izquierda 2 s,
+avanza 4 s y sube a la superficie. Se muestran la vista lateral con la escala de profundidad,
+las hélices (más rápidas cuanto mayor es el PWM), los displays de siete segmentos y las salidas
+PWM0, PWM1, Giro_Avance y Subir_Bajar.
 
 <div align="center">
-<img src="img/simulacion_dron.svg" alt="Simulación animada del funcionamiento del dron submarino" width="900">
+
+![Animación del dron](img/dron.svg)
+
 </div>
 
-> Ilustración del comportamiento esperado, no la ejecución del código.
+| Fase | Tiempo | Instrucción | PWM0 | PWM1 | Giro_Avance | Subir_Bajar | Profundidad |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 0 | 0 – 1 s | espera | 0 % | 0 % | 00 | 0 | 0 m |
+| 1 | 1 – 4 s | `C2` | 70 % | 0 % | 00 | 0 | 0 → 5 m |
+| 2 | 4 – 9 s | `A5` | 30 % | 50 % | 11 | 0 | 5 m |
+| 3 | 9 – 11 s | `D2` | 30 % | 50 % | 10 | 0 | 5 m |
+| 4 | 11 – 14 s | `A3` | 30 % | 50 % | 11 | 0 | 5 m |
+| 5 | 14 – 16 s | `E2` | 30 % | 50 % | 01 | 0 | 5 m |
+| 6 | 16 – 20 s | `A4` | 30 % | 50 % | 11 | 0 | 5 m |
+| 7 | 20 – 23 s | `F0` | 70 % | 0 % | 00 | 1 | 5 → 0 m |
+| 8 | 23 – 25 s | reposo | 0 % | 0 % | 00 | 0 | 0 m |
+
+> Ilustración del comportamiento esperado, no la ejecución del código. Los 3 s de descenso y de ascenso
+> son valores de la animación, no del enunciado.
 
 ### Simulador interactivo
 
@@ -85,11 +101,24 @@ Cada instrucción ocupa un byte: 4 bits altos = acción, 4 bits bajos = parámet
 │   └── index.html               # simulador interactivo
 ├── img/
 │   ├── dron_submarino.jpg       # imagen del enunciado de la práctica
-│   └── simulacion_dron.svg      # simulación animada del funcionamiento
+│   └── dron.svg                 # simulación animada (la que se ve en este README)
 └── src/
     ├── src-dron_submarino.a     # código fuente en ensamblador
     └── *.Uv2 / *.Opt            # archivos de proyecto de Keil uVision2
 ```
+
+## Cómo trabajar con el proyecto
+
+1. Abre `src/src-dron_submarino.Uv2` con Keil uVision2.
+2. Compila y simula desde el propio entorno.
+
+### Normas del equipo
+
+- Todo el proyecto vive dentro de esta carpeta. Usa rutas relativas al añadir archivos en uVision.
+- Antes de trabajar: `git pull`. Al terminar: `git add . && git commit -m "mensaje" && git push`.
+- Cierra el proyecto en uVision antes de hacer `pull` o `merge`.
+- Avisa al equipo antes de añadir o quitar archivos del proyecto (`.uv2`), para evitar conflictos.
+- No subas archivos generados (`.obj`, `.hex`, `.lst`…): ya están en `.gitignore`.
 
 ## Autoría
 
