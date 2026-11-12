@@ -26,6 +26,19 @@ midiendo profundidad y distancia con sensores analógicos y moviendo sus hélice
 
 El programa está organizado como una **máquina de estados** (estados – eventos – acciones).
 
+## Simulación
+
+Animación del funcionamiento con un programa de ejemplo (`C2 A5 D3 A4 F`): el dron baja a 5 m, avanza 5 s,
+gira a la derecha 3 s y avanza hasta que el sónar detecta un obstáculo a menos de 0,2 m, momento en que aborta
+el rastreo y sube. Se muestran la vista lateral, la vista cenital, la máquina de estados, los displays de
+siete segmentos y las salidas (PWM0, PWM1, Giro_Avance y Subir_Bajar).
+
+<div align="center">
+<img src="img/simulacion_dron.svg" alt="Simulación animada del funcionamiento del dron submarino" width="900">
+</div>
+
+> Ilustración del comportamiento esperado, no la ejecución del código.
+
 ## Hardware
 
 | Elemento | Detalle |
@@ -57,7 +70,8 @@ Cada instrucción ocupa un byte: 4 bits altos = acción, 4 bits bajos = parámet
 .
 ├── README.md
 ├── img/
-│   └── dron_submarino.jpg       # imagen del enunciado de la práctica
+│   ├── dron_submarino.jpg       # imagen del enunciado de la práctica
+│   └── simulacion_dron.svg      # simulación animada del funcionamiento
 └── src/
     ├── src-dron_submarino.a     # código fuente en ensamblador
     └── *.Uv2 / *.Opt            # archivos de proyecto de Keil uVision2
