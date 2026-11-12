@@ -1,0 +1,8 @@
+# El editor de uVision2 espera finales de linea Windows (CRLF)
+*.c    text eol=crlf
+*.h    text eol=crlf
+*.a51  text eol=crlf
+*.asm  text eol=crlf
+*.uv2  text eol=crlf
+*.opt  text eol=crlf
+*.md   text

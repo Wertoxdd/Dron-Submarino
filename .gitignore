@@ -1,0 +1,19 @@
+# Keil uVision2 - archivos generados al compilar
+*.obj
+*.lst
+*.m51
+*.hex
+*.lnp
+*.abs
+*.bak
+*.__i
+*.i
+*.plg
+*.tmp
+*.sbr
+Objects/
+Listings/
+
+# Windows
+Thumbs.db
+Desktop.ini
