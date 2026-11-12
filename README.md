@@ -39,6 +39,18 @@ siete segmentos y las salidas (PWM0, PWM1, Giro_Avance y Subir_Bajar).
 
 > Ilustración del comportamiento esperado, no la ejecución del código.
 
+### Simulador interactivo
+
+Versión interactiva con la lógica de la máquina de estados: [abrir el simulador](https://wertoxdd.github.io/Dron-Submarino/).
+También se puede abrir directamente el archivo `docs/index.html` en cualquier navegador.
+
+- **Botón Marcha/Paro** (P3.2), pausa, paso a paso y control de velocidad.
+- **Programa editable** en hexadecimal (0x50 a 0x7F) con validación y ejemplos.
+- **Obstáculo arrastrable** y sónar frontal que también detecta el muro del recinto.
+- **Sensores**: valores del ADC de profundidad y de distancia en tiempo real.
+- **Salidas**: PWM0, PWM1, Giro_Avance, Subir_Bajar y displays de siete segmentos.
+- **Máquina de estados** con el estado activo, registro de eventos y gráfica de profundidad.
+
 ## Hardware
 
 | Elemento | Detalle |
@@ -69,6 +81,8 @@ Cada instrucción ocupa un byte: 4 bits altos = acción, 4 bits bajos = parámet
 ```
 .
 ├── README.md
+├── docs/
+│   └── index.html               # simulador interactivo
 ├── img/
 │   ├── dron_submarino.jpg       # imagen del enunciado de la práctica
 │   └── simulacion_dron.svg      # simulación animada del funcionamiento
