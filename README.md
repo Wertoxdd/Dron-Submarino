@@ -91,19 +91,6 @@ Cada instrucción ocupa un byte: 4 bits altos = acción, 4 bits bajos = parámet
     └── *.Uv2 / *.Opt            # archivos de proyecto de Keil uVision2
 ```
 
-## Cómo trabajar con el proyecto
-
-1. Abre `src/src-dron_submarino.Uv2` con Keil uVision2.
-2. Compila y simula desde el propio entorno.
-
-### Normas del equipo
-
-- Todo el proyecto vive dentro de esta carpeta. Usa rutas relativas al añadir archivos en uVision.
-- Antes de trabajar: `git pull`. Al terminar: `git add . && git commit -m "mensaje" && git push`.
-- Cierra el proyecto en uVision antes de hacer `pull` o `merge`.
-- Avisa al equipo antes de añadir o quitar archivos del proyecto (`.uv2`), para evitar conflictos.
-- No subas archivos generados (`.obj`, `.hex`, `.lst`…): ya están en `.gitignore`.
-
 ## Autoría
 
 Proyecto desarrollado para la asignatura de Arquitectura de Computadores.
