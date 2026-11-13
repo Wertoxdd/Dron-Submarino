@@ -28,32 +28,25 @@ El programa está organizado como una **máquina de estados** (estados – event
 
 ## Simulación
 
-Animación en bucle (25 s) del funcionamiento con el programa de ejemplo `C2 A5 D2 A3 E2 A4 F0`:
-el dron baja a 5 m, avanza 5 s, gira a la derecha 2 s, avanza 3 s, gira a la izquierda 2 s,
-avanza 4 s y sube a la superficie. Se muestran la vista lateral con la escala de profundidad,
-las hélices (más rápidas cuanto mayor es el PWM), los displays de siete segmentos y las salidas
-PWM0, PWM1, Giro_Avance y Subir_Bajar.
+Animación en bucle (40 s) renderizada por raytracing. Encadena tres recorridos, que cubren los casos del enunciado:
+
+| Recorrido | Programa | Qué muestra |
+|:---:|---|---|
+| 1 | `C2 A5 D2 A3 E2 A4 F0` | Recorrido completo: baja a 5 m, avanza, gira y sube al llegar a `F`. |
+| 2 | `C3 E4 A6 D1 A8 F0` | Durante el giro `E4` hay un obstáculo a menos de 0,2 m y se ignora. Durante el avance `A8` otro obstáculo aborta el rastreo y el dron sube. |
+| 3 | `C1 D5 A4 F0` | Se pulsa Marcha/Paro durante el giro `D5` y el dron sube. |
 
 <div align="center">
 
-![Animación del dron](img/dron.svg)
+![Animación del dron](img/dron.webp)
 
 </div>
 
-| Fase | Tiempo | Instrucción | PWM0 | PWM1 | Giro_Avance | Subir_Bajar | Profundidad |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 0 | 0 – 1 s | espera | 0 % | 0 % | 00 | 0 | 0 m |
-| 1 | 1 – 4 s | `C2` | 70 % | 0 % | 00 | 0 | 0 → 5 m |
-| 2 | 4 – 9 s | `A5` | 30 % | 50 % | 11 | 0 | 5 m |
-| 3 | 9 – 11 s | `D2` | 30 % | 50 % | 10 | 0 | 5 m |
-| 4 | 11 – 14 s | `A3` | 30 % | 50 % | 11 | 0 | 5 m |
-| 5 | 14 – 16 s | `E2` | 30 % | 50 % | 01 | 0 | 5 m |
-| 6 | 16 – 20 s | `A4` | 30 % | 50 % | 11 | 0 | 5 m |
-| 7 | 20 – 23 s | `F0` | 70 % | 0 % | 00 | 1 | 5 → 0 m |
-| 8 | 23 – 25 s | reposo | 0 % | 0 % | 00 | 0 | 0 m |
+Versión a 3200x1800: [vídeo MP4](img/dron_4k.mp4) · [WebP](img/dron_4k.webp). Tabla completa de fases: [img/dron_tiempos.md](img/dron_tiempos.md).
 
-> Ilustración del comportamiento esperado, no la ejecución del código. Los 3 s de descenso y de ascenso
-> son valores de la animación, no del enunciado.
+> Ilustración del comportamiento esperado, no la ejecución del código. Parámetros de la animación que no vienen en el
+> enunciado: avance 0,5 m/s, giro 45 °/s, descenso y ascenso de 3 s, y 1 s de animación = 1,4 s de sistema.
+> Con el paro se supone que el dron sube.
 
 ### Simulador interactivo
 
@@ -101,7 +94,12 @@ Cada instrucción ocupa un byte: 4 bits altos = acción, 4 bits bajos = parámet
 │   └── index.html               # simulador interactivo
 ├── img/
 │   ├── dron_submarino.jpg       # imagen del enunciado de la práctica
-│   └── dron.svg                 # simulación animada (la que se ve en este README)
+│   ├── dron.webp                # animación del README (960x540)
+│   ├── dron_4k.webp             # la misma animación a 3200x1800
+│   ├── dron_4k.mp4              # la misma animación en vídeo
+│   └── dron_tiempos.md          # tabla de tiempos de la animación
+├── tools/
+│   └── generar_dron.py          # script que genera la animación
 └── src/
     ├── src-dron_submarino.a     # código fuente en ensamblador
     └── *.Uv2 / *.Opt            # archivos de proyecto de Keil uVision2
