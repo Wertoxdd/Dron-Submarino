@@ -38,11 +38,11 @@ Animación en bucle (40 s) renderizada por raytracing. Encadena tres recorridos,
 
 <div align="center">
 
-![Animación del dron](img/dron.webp)
+<img src="img/dron_fhd.webp" alt="Animación del dron" width="100%">
 
 </div>
 
-Versión a 3200x1800: [vídeo MP4](img/dron_4k.mp4) · [WebP](img/dron_4k.webp). Tabla completa de fases: [img/dron_tiempos.md](img/dron_tiempos.md).
+Otras versiones: [WebP ligera 960x540](img/dron.webp) · [vídeo MP4 a 3200x1800](img/dron_4k.mp4). Tabla completa de fases: [img/dron_tiempos.md](img/dron_tiempos.md).
 
 > Ilustración del comportamiento esperado, no la ejecución del código. Parámetros de la animación que no vienen en el
 > enunciado: avance 0,5 m/s, giro 45 °/s, descenso y ascenso de 3 s, y 1 s de animación = 1,4 s de sistema.
@@ -94,9 +94,9 @@ Cada instrucción ocupa un byte: 4 bits altos = acción, 4 bits bajos = parámet
 │   └── index.html               # simulador interactivo
 ├── img/
 │   ├── dron_submarino.jpg       # imagen del enunciado de la práctica
-│   ├── dron.webp                # animación del README (960x540)
-│   ├── dron_4k.webp             # la misma animación a 3200x1800
-│   ├── dron_4k.mp4              # la misma animación en vídeo
+│   ├── dron_fhd.webp            # animación del README (1920x1080)
+│   ├── dron.webp                # la misma animación, versión ligera (960x540)
+│   ├── dron_4k.mp4              # la misma animación en vídeo a 3200x1800
 │   └── dron_tiempos.md          # tabla de tiempos de la animación
 ├── tools/
 │   └── generar_dron.py          # script que genera la animación
