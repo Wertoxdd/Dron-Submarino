@@ -42,7 +42,7 @@ Animación en bucle (40 s) renderizada por raytracing. Encadena tres recorridos,
 
 </div>
 
-Otras versiones: [WebP ligera 960x540](img/dron.webp) · [vídeo MP4 a 3200x1800](img/dron_4k.mp4). Tabla completa de fases: [img/dron_tiempos.md](img/dron_tiempos.md).
+Tabla completa de fases: [img/dron_tiempos.md](img/dron_tiempos.md).
 
 > Ilustración del comportamiento esperado, no la ejecución del código. Parámetros de la animación que no vienen en el
 > enunciado: avance 0,5 m/s, giro 45 °/s, descenso y ascenso de 3 s, y 1 s de animación = 1,4 s de sistema.
