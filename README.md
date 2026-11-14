@@ -48,17 +48,6 @@ Tabla completa de fases: [img/dron_tiempos.md](img/dron_tiempos.md).
 > enunciado: avance 0,5 m/s, giro 45 °/s, descenso y ascenso de 3 s, y 1 s de animación = 1,4 s de sistema.
 > Con el paro se supone que el dron sube.
 
-### Simulador interactivo
-
-Versión interactiva con la lógica de la máquina de estados: [abrir el simulador](https://wertoxdd.github.io/Dron-Submarino/).
-También se puede abrir directamente el archivo `docs/index.html` en cualquier navegador.
-
-- **Botón Marcha/Paro** (P3.2), pausa, paso a paso y control de velocidad.
-- **Programa editable** en hexadecimal (0x50 a 0x7F) con validación y ejemplos.
-- **Obstáculo arrastrable** y sónar frontal que también detecta el muro del recinto.
-- **Sensores**: valores del ADC de profundidad y de distancia en tiempo real.
-- **Salidas**: PWM0, PWM1, Giro_Avance, Subir_Bajar y displays de siete segmentos.
-- **Máquina de estados** con el estado activo, registro de eventos y gráfica de profundidad.
 
 ## Hardware
 
