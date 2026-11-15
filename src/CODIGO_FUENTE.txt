@@ -1,0 +1,505 @@
+;---------------------------------------------------------------------------------------------
+;                         VARIABLES DIRECCIONABLES POR BITS
+;---------------------------------------------------------------------------------------------
+
+FLAG_10MS EQU 0x20.0       ; lo pone a 1 la ISR de T0
+FLAG_1S EQU 0x20.1         ; lo pone a 1 el GEN_COD_EVENT
+FLAG_BOTON EQU 0x20.2      ; lo pone a 1 la ISR de INT0
+FLAG_FIN EQU 0x20.3        ; si se pone a 1, la subida termina el recorrido
+BIT_SENTIDO EQU 0x20.4     ; si esta a 1 significa subir, a 0 bajar (se copia a P1.5)
+
+;---------------------------------------------------------------------------------------------
+;                                  VARIABLES
+;---------------------------------------------------------------------------------------------
+
+ESTADO EQU 0x30            ; 0=reposo, 1=vertical, 2=horizontal
+EVENTO EQU 0x31            ; da valores del 0 al 4
+PUNTERO EQU 0x32           ; guarda la direccion de la siguiente instruccion
+INSTR EQU 0x33             ; guarda el nibble alto de lo que lee en la direccion que guarda PUNTERO.
+PARAM EQU 0x34             ; guarda el nibble bajo de lo que lee en la direccion que guarda PUNTERO.
+ACCION EQU 0x35            ; es la instruccion horizontal que se va a hacer
+TIEMPO  EQU 0x36           ; son los segundos que quedan
+OBJETIVO EQU 0x37          ; codigo del ADC de la profundidad a alcanzar
+PROF EQU 0x38              ; ultima medida del canal 0 del ADC
+DIST EQU 0x39              ; ultima medida del canal 1 del ADC
+CONT_TICKS EQU 0x3A        ; se carga con el valor 100, y decrementa por cada tick de 10ms
+
+;---------------------------------------------------------------------------------------------
+;				     TIMERS	
+;---------------------------------------------------------------------------------------------
+
+TH_RECARGA EQU 0xB1       ; valor de recarga del TH para el timer 0 de 10ms (TH0)
+TL_RECARGA EQU 0xE0       ; valor de recarga del TL para el timer 0 de 10ms (TL0)
+TICKS_SEC EQU 0x64        ; numero de ticks que tiene que hacer en un segundo
+
+;---------------------------------------------------------------------------------------------
+;				  INSTRUCCIONES	
+;---------------------------------------------------------------------------------------------
+
+C_PROFUNDIDAD EQU 0xC0    ; control de profundidad, el nivel va en el nibble bajo
+A_AVANZAR EQU 0xA0        ; control de avanzar, los segundos van en el nibble bajo
+D_DERECHA EQU 0xD0        ; control de giro a la derecha, los segundos van en el nibble bajo
+E_IZQUIERDA EQU 0xE0      ; control de giro a la izquierda, los segundos van en el nibble bajo
+F_FIN EQU 0xF0            ; fin del programa
+
+;---------------------------------------------------------------------------------------------
+;				       ADC	
+;---------------------------------------------------------------------------------------------
+
+ADCON EQU 0xC5               ; registro de control del ADC
+ADCH EQU 0xC6                ; resultado del ADC (8 bits altos)
+ADC_SUPERFICIE EQU 0x43      ; código del ADC en la superficie 
+ADC_CUENTAS_NIVEL EQU 0x0A   ; cuentas del ADC que se suman por cada nivel de C
+ADC_LIM_OBSTACULO EQU 0x0A   ; código del ADC para detectar obstaculo
+
+;---------------------------------------------------------------------------------------------
+;                            	  LEDS DE MOTIVO
+;---------------------------------------------------------------------------------------------
+LED_FIN EQU 0xC0.0           ; P4.0: recorrido terminado
+LED_OBST EQU 0xC0.1          ; P4.1: abortado por obstaculo
+
+;---------------------------------------------------------------------------------------------
+;                                    MOTORES
+;---------------------------------------------------------------------------------------------
+PWM0 EQU 0xFC                ; duty cycle de las helices de profundidad
+PWM1 EQU 0xFD                ; duty cycle de las helices de giro/avance
+PWMP EQU 0xFE                ; prescaler del PWM (frecuencia)
+SUBIR_BAJAR EQU P1.5         ; 1 subir, 0 bajar
+
+; valores de los registros
+PWM_PARADO EQU 0x00          ; 0 %
+PWM_MANTENER EQU 0x4D        ; 30 % (PWM0)
+PWM_VERTICAL EQU 0xB3        ; 70 % (PWM0)
+PWM_AVANCE EQU 0x80          ; 50 % (PWM1)
+PWM_PRESC EQU 0x5D	     ; valor que se carga en el registro del prescaler del PWM
+;---------------------------------------------------------------------------------------------
+
+ORG 0x0000
+LJMP INICIO
+
+ORG 0x0003              ; vector de atencion a INT0
+LJMP ISR_INT0
+
+ORG 0x000B              ; vector de atencion aT0
+LJMP ISR_T0
+
+ORG 0x0080              ; el código empieza después de todos los vectores del 80C552
+
+;---------------------------------------------------------------------------------------------
+;                        SUBRUTINAS DE ATENCION A INTERRUPCIONES
+;---------------------------------------------------------------------------------------------
+
+ISR_INT0:
+	SETB FLAG_BOTON
+	RETI
+
+ISR_T0:
+	MOV TH0, #TH_RECARGA
+	MOV TL0, #TL_RECARGA
+	SETB FLAG_10MS
+	RETI
+
+;---------------------------------------------------------------------------------------------
+
+
+
+
+;---------------------------------------------------------------------------------------------
+;                                    BUCLE PRINCIPAL
+;---------------------------------------------------------------------------------------------
+
+INICIO:
+	MOV SP, #0x7F
+	ACALL INICIALIZACIONES
+CONTROL:
+	ACALL GEN_COD_EVENT
+	ACALL MAQ_ESTADOS
+	SJMP CONTROL
+
+;---------------------------------------------------------------------------------------------
+
+
+;---------------------------------------------------------------------------------------------
+;                                  GENERADOR DE EVENTOS
+;---------------------------------------------------------------------------------------------
+GEN_COD_EVENT:
+	JBC FLAG_10MS, TAREAS_10MS 
+	SJMP COMP_EVENTO_1
+
+TAREAS_10MS:
+	ACALL MEDIR
+	DEC CONT_TICKS
+	MOV A, CONT_TICKS
+	JNZ COMP_EVENTO_1		
+	MOV CONT_TICKS, #TICKS_SEC        ; cargar CONT_TICKS con el valor del TICKS_SEC
+	SETB FLAG_1S                      ; poner a 1 el flag de segundo
+
+COMP_EVENTO_1:
+	JBC FLAG_BOTON, EVENTO_1
+	SJMP COMP_EVENTO_2
+
+EVENTO_1:
+	MOV EVENTO, #0x01
+	RET
+
+COMP_EVENTO_2:
+	MOV A, ESTADO
+	CJNE A, #0x01, COMP_EVENTO_3
+	MOV A, PROF
+	CLR C
+	SUBB A, OBJETIVO                   ; el bit de carry va a ser 1 si PROF < OBJETIVO
+	JB BIT_SENTIDO, SUBIENDO
+	JNC EVENTO_2                       ; bajando si PROF >= OBJETIVO
+	SJMP COMP_EVENTO_3
+
+SUBIENDO:
+	JC EVENTO_2                        ; saltar a EVENTO_2 si PROF < OBJETIVO
+	JZ EVENTO_2                        ; saltar a EVENTO_2 si PROF = OBJETIVO
+	SJMP COMP_EVENTO_3
+
+EVENTO_2:
+	MOV EVENTO, #0x02
+	RET
+
+COMP_EVENTO_3:
+	MOV A, ESTADO
+	CJNE A, #0x02, COMP_EVENTO_4
+	MOV A, ACCION
+	CLR C
+	SUBB A, #A_AVANZAR
+	JNZ COMP_EVENTO_4
+	MOV A, DIST
+	CLR C
+	SUBB A, #ADC_LIM_OBSTACULO
+	JC EVENTO_3
+	SJMP COMP_EVENTO_4
+
+EVENTO_3:
+	MOV EVENTO, #0x03
+	RET	
+
+COMP_EVENTO_4:
+	JBC FLAG_1S, EVENTO_4
+	SJMP EVENTO_0
+
+EVENTO_4:
+	MOV EVENTO, #0x04
+	RET
+
+EVENTO_0:
+	MOV EVENTO, #0x00
+	RET 
+
+;---------------------------------------------------------------------------------------------
+
+MAQ_ESTADOS:
+	MOV A, ESTADO
+	RL A
+	MOV DPTR, #LISTA_EST
+	JMP @A+DPTR
+
+LISTA_EST:
+	AJMP ESTADO_0
+	AJMP ESTADO_1
+	AJMP ESTADO_2
+
+ESTADO_0:
+	ACALL MQ_EVEN_0
+	RET
+
+ESTADO_1:
+	ACALL MQ_EVEN_1
+	RET
+
+ESTADO_2:
+	ACALL MQ_EVEN_2
+	RET
+
+;---------------------------------------------------------------------------------------------
+
+MQ_EVEN_0:
+	MOV A, EVENTO
+	RL A
+	MOV DPTR, #LIST_EVEN_MQ_EVEN_0
+	JMP @A+DPTR
+LIST_EVEN_MQ_EVEN_0:
+	AJMP ME0_EV_0
+	AJMP ME0_EV_1
+	AJMP ME0_EV_2
+	AJMP ME0_EV_3
+	AJMP ME0_EV_4
+
+;---------------------------------------------------------------------------------------------
+
+MQ_EVEN_1:
+	MOV A, EVENTO
+	RL A
+	MOV DPTR, #LIST_EVEN_MQ_EVEN_1
+	JMP @A+DPTR
+LIST_EVEN_MQ_EVEN_1:
+	AJMP ME1_EV_0
+	AJMP ME1_EV_1
+	AJMP ME1_EV_2
+	AJMP ME1_EV_3
+	AJMP ME1_EV_4
+
+;---------------------------------------------------------------------------------------------
+
+MQ_EVEN_2:
+	MOV A, EVENTO
+	RL A
+	MOV DPTR, #LIST_EVEN_MQ_EVEN_2
+	JMP @A+DPTR
+LIST_EVEN_MQ_EVEN_2:
+	AJMP ME2_EV_0
+	AJMP ME2_EV_1
+	AJMP ME2_EV_2
+	AJMP ME2_EV_3
+	AJMP ME2_EV_4
+
+;---------------------------------------------------------------------------------------------
+
+ME0_EV_0:
+	ACALL DORMIR
+	RET
+
+ME0_EV_1:
+	MOV A, 0x50                        ; mira la primera instruccion del programa
+	ANL A, #0xF0                       ; aplicar mascara para conseguir el nibble alto
+	CJNE A, #C_PROFUNDIDAD, ME0_EV_2   ; mirar si es C
+	ACALL INICIAR
+	MOV ESTADO, #0x01
+	RET
+
+ME0_EV_2:
+	RET
+
+ME0_EV_3:
+	RET
+
+ME0_EV_4:
+	RET
+;---------------------------------------------------------------------------------------------
+
+ME1_EV_0:
+	RET
+
+ME1_EV_1:
+	RET
+
+ME1_EV_2:
+	JNB FLAG_FIN, ME1_BIF
+	ACALL PARAR
+	MOV ESTADO, #0x00       ; moverse a REPOSO
+	RET
+
+ME1_BIF:
+	ACALL BIF_INS
+	RET
+
+ME1_EV_3:
+	RET
+
+ME1_EV_4:
+	RET
+;---------------------------------------------------------------------------------------------
+
+ME2_EV_0:
+	RET
+
+ME2_EV_1:
+	RET
+
+ME2_EV_2:
+	RET
+
+ME2_EV_3:
+	ACALL EMERGER_OBST
+	MOV ESTADO, #0x01
+	RET
+
+ME2_EV_4:
+	MOV A, TIEMPO
+	CJNE A, #0x01, DESCONTAR
+	ACALL BIF_INS
+	RET
+
+;---------------------------------------------------------------------------------------------
+; ACCIONES
+;---------------------------------------------------------------------------------------------
+
+DORMIR:                                ; ACC_1 -
+	ORL PCON,#0x01                     ; pone el bit 0 del PCON (IDL - modo IDLE)
+	RET
+
+INICIAR:                               ; ACC_2 -
+	CLR LED_FIN                        ; apagar los LED al iniciar el recorrido
+	CLR LED_OBST                       ;
+	MOV PWMP, #PWM_PRESC               ; el modo reposo reinicia el PWM, se le mete el valor de nuevo
+	MOV PUNTERO, #0x50                 ; guardar la direccion de la primera instruccion
+	ACALL LEER_INS
+	ACALL PREP_VERTICAL
+	RET
+
+PARAR:                                 ; ACC_3 -
+	MOV PWM0, #PWM_PARADO              ; PWM1 Y PWM0 a 0
+	MOV PWM1, #PWM_PARADO              ;
+	CLR P1.6                           ; parar el dron
+	CLR P1.7                           ;
+	CLR P2.7                           ; apagar los dp
+	CLR P0.7
+	RET
+
+INS_VERTICAL:                          ; ACC_4 -
+	ACALL LEER_INS
+	ACALL PREP_VERTICAL
+	RET
+
+INS_EMERGER:                           ; ACC_5 -
+	ACALL LEER_INS
+	SETB LED_FIN
+	ACALL EMERGER
+	RET
+
+INS_HORIZONTAL:                        ; ACC_6 -
+	ACALL LEER_INS
+	ACALL PREP_HORIZONTAL
+	RET
+
+EMERGER_OBST:                          ; ACC_7 -
+	SETB LED_OBST                      ; encender el LED de obstaculo
+	ACALL EMERGER
+	RET
+
+DESCONTAR:                             ; ACC_8 -
+	DEC TIEMPO
+	ACALL MOSTRAR
+	RET
+
+;---------------------------------------------------------------------------------------------
+; SUBRUTINAS DE INICIALIZACIONES
+;---------------------------------------------------------------------------------------------
+INICIALIZACIONES:
+	ACALL INICIALIZAR_VBLES
+	ACALL INICIALIZAR_SALIDAS
+	ACALL INICIALIZAR_PUERTOS
+	ACALL INICIALIZAR_TIMER
+	ACALL INICIALIZAR_ADC
+	ACALL INICIALIZAR_INT
+	RET
+
+INICIALIZAR_VBLES:
+	CLR FLAG_10MS    ; inicializar las 5 flags declaradas
+        CLR FLAG_1S
+	CLR FLAG_BOTON
+	CLR FLAG_FIN
+	CLR BIT_SENTIDO
+	MOV ESTADO, #0x00       ; inicializar las variables de la maq. de est.
+	MOV EVENTO, #0x00
+	MOV CONT_TICKS, #TICKS_SEC
+	MOV PUNTERO, #0x50      ;apunta a la primera instrucción
+	MOV INSTR, #0x00
+	MOV PARAM, #0x00
+	MOV ACCION, #0x00
+	MOV TIEMPO, #0x00
+	MOV OBJETIVO, #0x00
+	MOV PROF, #0x00
+	MOV DIST, #0x00
+	RET
+
+INICIALIZAR_SALIDAS:
+	MOV P2, #0x40	; aplicamos mascara para seleccionar el segmento G deambos displays
+	MOV P0, #0x40	
+	CLR LED_FIN	; leds apagados	
+	CLR LED_OBST
+	MOV PWM0, #PWM_PARADO
+	MOV PWM1, #PWM_PARADO
+	CLR P1.6
+	CLR P1.7
+	CLR SUBIR_BAJAR
+	RET
+
+INICIALIZAR_PUERTOS:
+	SETB P3.2
+	RET
+
+INICIALIZAR_TIMER:
+	MOV TMOD, #0x01	     ; timer 0 en modo 1 (16 bits), reloj interno y sin GATE
+	MOV TH0, #TH_RECARGA ; primera carga del timer
+	MOV TL0, #TL_RECARGA
+	SETB TR0             ; arrancar el timer 0
+	RET
+
+INICIALIZAR_ADC:
+	MOV ADCON, #0x00     ; canal 0, arranque por SW, sin conversion ni resultado pendiente
+	RET
+
+INICIALIZAR_INT:
+	SETB IT0             ; INT0 por flanco de bajada
+	SETB ET0             ; habilitar interrupcion del timer 0
+	SETB EX0             ; habilitar interrupcion externa 0 (boton)
+	SETB EA              ; habilitar interrupciones (general)
+	RET
+	
+
+;---------------------------------------------------------------------------------------------
+; SUBRUTINAS
+;---------------------------------------------------------------------------------------------
+
+MOSTRAR:
+	MOV DPTR,#TABLA_7SEG
+	MOV A, INSTR
+	CJNE A, #C_PROFUNDIDAD, MOSTRAR_HORIZONTAL
+	MOV P2, #0x39
+	MOV A, PARAM
+	MOVC A, @A+DPTR
+	MOV P0, A
+	SETB P2.7
+	SETB P0.7
+	RET
+MOSTRAR_HORIZONTAL:              ; A, D o E: letra y segundos, sin dp
+	MOV A, ACCION
+	CJNE A, #A_AVANZAR, MOSTRAR_NO_A
+	MOV P2, #0x77                ; "A"
+	SJMP MOSTRAR_NUM
+MOSTRAR_NO_A:
+	CJNE A, #D_DERECHA, MOSTRAR_E
+	MOV P2, #0x5E                ; "D"
+	SJMP MOSTRAR_NUM
+MOSTRAR_E:
+	MOV P2, #0x79                ; "E"
+MOSTRAR_NUM:
+	MOV A, TIEMPO
+	MOVC A, @A+DPTR
+	MOV P0, A
+	RET
+
+TABLA_7SEG:                                             ; tabla de valores para el display de 7 segmentos
+	DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07   ; 0-7
+	DB 0x7F, 0x6F, 0x77, 0x7C, 0x39, 0x5E, 0x79, 0x71   ; 8-F
+
+
+LEER_INS:
+	MOV R0, PUNTERO       ; leemos el valor de la instruccion
+	MOV A, @R0
+	MOV R1, A              ; auxiliar
+	ANL A, #0xF0           ; separamos nibble alto (tipo de instruccion)
+	MOV INSTR, A
+	MOV A, R1
+	ANL A, #0x0F           ; separamos nibble bajo (cantidad o duracion)
+	MOV PARAM, A
+	INC PUNTERO
+	RET
+
+EMERGER:
+	MOV OBJETIVO, #ADC_SUPERFICIE
+	SETB FLAG_FIN
+	SETB BIT_SENTIDO
+	SETB SUBIR_BAJAR
+	MOV PWM1, #PWM_PARADO
+	MOV PWM0, #PWM_VERTICAL
+	RET
+
+
+
+END
