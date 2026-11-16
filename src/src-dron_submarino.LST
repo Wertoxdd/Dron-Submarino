@@ -1,0 +1,842 @@
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     1
+
+
+MACRO ASSEMBLER A51 V6.14
+OBJECT MODULE PLACED IN .\src-dron_submarino.OBJ
+ASSEMBLER INVOKED BY: C:\Keil\C51\BIN\A51.EXE .\src-dron_submarino.a SET(SMALL) DEBUG EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     ;------------------------------------------------------------------------------------------
+                             ---
+                       2     ;                         VARIABLES DIRECCIONABLES POR BITS
+                       3     ;------------------------------------------------------------------------------------------
+                             ---
+                       4     
+  0000                 5     FLAG_10MS EQU 0x20.0       ; lo pone a 1 la ISR de T0
+  0001                 6     FLAG_1S EQU 0x20.1         ; lo pone a 1 el GEN_COD_EVENT
+  0002                 7     FLAG_BOTON EQU 0x20.2      ; lo pone a 1 la ISR de INT0
+  0003                 8     FLAG_FIN EQU 0x20.3        ; si se pone a 1, la subida termina el recorrido
+  0004                 9     BIT_SENTIDO EQU 0x20.4     ; si esta a 1 significa subir, a 0 bajar (se copia a P1.5)
+                      10     
+                      11     ;------------------------------------------------------------------------------------------
+                             ---
+                      12     ;                                  VARIABLES
+                      13     ;------------------------------------------------------------------------------------------
+                             ---
+                      14     
+  0030                15     ESTADO EQU 0x30            ; 0=reposo, 1=vertical, 2=horizontal
+  0031                16     EVENTO EQU 0x31            ; da valores del 0 al 4
+  0032                17     PUNTERO EQU 0x32           ; guarda la direccion de la siguiente instruccion
+  0033                18     INSTR EQU 0x33             ; guarda el nibble alto de lo que lee en la direccion que guarda
+                              PUNTERO.
+  0034                19     PARAM EQU 0x34             ; guarda el nibble bajo de lo que lee en la direccion que guarda
+                              PUNTERO.
+  0035                20     ACCION EQU 0x35            ; es la instruccion horizontal que se va a hacer
+  0036                21     TIEMPO  EQU 0x36           ; son los segundos que quedan
+  0037                22     OBJETIVO EQU 0x37          ; codigo del ADC de la profundidad a alcanzar
+  0038                23     PROF EQU 0x38              ; ultima medida del canal 0 del ADC
+  0039                24     DIST EQU 0x39              ; ultima medida del canal 1 del ADC
+  003A                25     CONT_TICKS EQU 0x3A        ; se carga con el valor 100, y decrementa por cada tick de 10ms
+                      26     
+                      27     ;------------------------------------------------------------------------------------------
+                             ---
+                      28     ;                                    TIMERS     
+                      29     ;------------------------------------------------------------------------------------------
+                             ---
+                      30     
+  00B1                31     TH_RECARGA EQU 0xB1       ; valor de recarga del TH para el timer 0 de 10ms (TH0)
+  00E0                32     TL_RECARGA EQU 0xE0       ; valor de recarga del TL para el timer 0 de 10ms (TL0)
+  0064                33     TICKS_SEC EQU 0x64        ; numero de ticks que tiene que hacer en un segundo
+                      34     
+                      35     ;------------------------------------------------------------------------------------------
+                             ---
+                      36     ;                                 INSTRUCCIONES 
+                      37     ;------------------------------------------------------------------------------------------
+                             ---
+                      38     
+  00C0                39     C_PROFUNDIDAD EQU 0xC0    ; control de profundidad, el nivel va en el nibble bajo
+  00A0                40     A_AVANZAR EQU 0xA0        ; control de avanzar, los segundos van en el nibble bajo
+  00D0                41     D_DERECHA EQU 0xD0        ; control de giro a la derecha, los segundos van en el nibble baj
+                             o
+  00E0                42     E_IZQUIERDA EQU 0xE0      ; control de giro a la izquierda, los segundos van en el nibble b
+                             ajo
+  00F0                43     F_FIN EQU 0xF0            ; fin del programa
+                      44     
+                      45     ;------------------------------------------------------------------------------------------
+                             ---
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     2
+
+                      46     ;                                      ADC      
+                      47     ;------------------------------------------------------------------------------------------
+                             ---
+                      48     
+  00C5                49     ADCON EQU 0xC5               ; registro de control del ADC
+  00C6                50     ADCH EQU 0xC6                ; resultado del ADC (8 bits altos)
+  0043                51     ADC_SUPERFICIE EQU 0x43      ; código del ADC en la superficie 
+  000A                52     ADC_CUENTAS_NIVEL EQU 0x0A   ; cuentas del ADC que se suman por cada nivel de C
+  000A                53     ADC_LIM_OBSTACULO EQU 0x0A   ; código del ADC para detectar obstaculo
+                      54     
+                      55     ;------------------------------------------------------------------------------------------
+                             ---
+                      56     ;                                 LEDS DE MOTIVO
+                      57     ;------------------------------------------------------------------------------------------
+                             ---
+  00C0                58     LED_FIN EQU 0xC0.0           ; P4.0: recorrido terminado
+  00C1                59     LED_OBST EQU 0xC0.1          ; P4.1: abortado por obstaculo
+                      60     
+                      61     ;------------------------------------------------------------------------------------------
+                             ---
+                      62     ;                                    MOTORES
+                      63     ;------------------------------------------------------------------------------------------
+                             ---
+  00FC                64     PWM0 EQU 0xFC                ; duty cycle de las helices de profundidad
+  00FD                65     PWM1 EQU 0xFD                ; duty cycle de las helices de giro/avance
+  00FE                66     PWMP EQU 0xFE                ; prescaler del PWM (frecuencia)
+  0095                67     SUBIR_BAJAR EQU P1.5         ; 1 subir, 0 bajar
+                      68     
+                      69     ; valores de los registros
+  0000                70     PWM_PARADO EQU 0x00          ; 0 %
+  004D                71     PWM_MANTENER EQU 0x4D        ; 30 % (PWM0)
+  00B3                72     PWM_VERTICAL EQU 0xB3        ; 70 % (PWM0)
+  0080                73     PWM_AVANCE EQU 0x80          ; 50 % (PWM1)
+  005D                74     PWM_PRESC EQU 0x5D           ; valor que se carga en el registro del prescaler del PWM
+                      75     ;------------------------------------------------------------------------------------------
+                             ---
+                      76     
+0000                  77     ORG 0x0000
+0000 02008C           78     LJMP INICIO
+                      79     
+0003                  80     ORG 0x0003              ; vector de atencion a INT0
+0003 020080           81     LJMP ISR_INT0
+                      82     
+000B                  83     ORG 0x000B              ; vector de atencion aT0
+000B 020083           84     LJMP ISR_T0
+                      85     
+0080                  86     ORG 0x0080              ; el código empieza después de todos los vectores del 80C552
+                      87     
+                      88     ;------------------------------------------------------------------------------------------
+                             ---
+                      89     ;                        SUBRUTINAS DE ATENCION A INTERRUPCIONES
+                      90     ;------------------------------------------------------------------------------------------
+                             ---
+                      91     
+0080                  92     ISR_INT0:
+0080 D202             93             SETB FLAG_BOTON
+0082 32               94             RETI
+                      95     
+0083                  96     ISR_T0:
+0083 758CB1           97             MOV TH0, #TH_RECARGA
+0086 758AE0           98             MOV TL0, #TL_RECARGA
+0089 D200             99             SETB FLAG_10MS
+008B 32              100             RETI
+                     101     
+                     102     ;------------------------------------------------------------------------------------------
+                             ---
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     3
+
+                     103     
+                     104     
+                     105     
+                     106     
+                     107     ;------------------------------------------------------------------------------------------
+                             ---
+                     108     ;                                    BUCLE PRINCIPAL
+                     109     ;------------------------------------------------------------------------------------------
+                             ---
+                     110     
+008C                 111     INICIO:
+008C 75817F          112             MOV SP, #0x7F
+008F 31AD            113             ACALL INICIALIZACIONES
+0091                 114     CONTROL:
+0091 1197            115             ACALL GEN_COD_EVENT
+0093 11F3            116             ACALL MAQ_ESTADOS
+0095 80FA            117             SJMP CONTROL
+                     118     
+                     119     ;------------------------------------------------------------------------------------------
+                             ---
+                     120     
+                     121     
+                     122     ;------------------------------------------------------------------------------------------
+                             ---
+                     123     ;                                  GENERADOR DE EVENTOS
+                     124     ;------------------------------------------------------------------------------------------
+                             ---
+0097                 125     GEN_COD_EVENT:
+0097 100002          126             JBC FLAG_10MS, TAREAS_10MS 
+009A 800D            127             SJMP COMP_EVENTO_1
+                     128     
+009C                 129     TAREAS_10MS:
+009C 51A4            130             ACALL MEDIR
+009E 153A            131             DEC CONT_TICKS
+00A0 E53A            132             MOV A, CONT_TICKS
+00A2 7005            133             JNZ COMP_EVENTO_1               
+00A4 753A64          134             MOV CONT_TICKS, #TICKS_SEC        ; cargar CONT_TICKS con el valor del TICKS_SEC
+00A7 D201            135             SETB FLAG_1S                      ; poner a 1 el flag de segundo
+                     136     
+00A9                 137     COMP_EVENTO_1:
+00A9 100202          138             JBC FLAG_BOTON, EVENTO_1
+00AC 8004            139             SJMP COMP_EVENTO_2
+                     140     
+00AE                 141     EVENTO_1:
+00AE 753101          142             MOV EVENTO, #0x01
+00B1 22              143             RET
+                     144     
+00B2                 145     COMP_EVENTO_2:
+00B2 E530            146             MOV A, ESTADO
+00B4 B40116          147             CJNE A, #0x01, COMP_EVENTO_3
+00B7 E538            148             MOV A, PROF
+00B9 C3              149             CLR C
+00BA 9537            150             SUBB A, OBJETIVO                   ; el bit de carry va a ser 1 si PROF < OBJETIVO
+00BC 200404          151             JB BIT_SENTIDO, SUBIENDO
+00BF 5008            152             JNC EVENTO_2                       ; bajando si PROF >= OBJETIVO
+00C1 800A            153             SJMP COMP_EVENTO_3
+                     154     
+00C3                 155     SUBIENDO:
+00C3 4004            156             JC EVENTO_2                        ; saltar a EVENTO_2 si PROF < OBJETIVO
+00C5 6002            157             JZ EVENTO_2                        ; saltar a EVENTO_2 si PROF = OBJETIVO
+00C7 8004            158             SJMP COMP_EVENTO_3
+                     159     
+00C9                 160     EVENTO_2:
+00C9 753102          161             MOV EVENTO, #0x02
+00CC 22              162             RET
+                     163     
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     4
+
+00CD                 164     COMP_EVENTO_3:
+00CD E530            165             MOV A, ESTADO
+00CF B40214          166             CJNE A, #0x02, COMP_EVENTO_4
+00D2 E535            167             MOV A, ACCION
+00D4 C3              168             CLR C
+00D5 94A0            169             SUBB A, #A_AVANZAR
+00D7 700D            170             JNZ COMP_EVENTO_4
+00D9 E539            171             MOV A, DIST
+00DB C3              172             CLR C
+00DC 940A            173             SUBB A, #ADC_LIM_OBSTACULO
+00DE 4002            174             JC EVENTO_3
+00E0 8004            175             SJMP COMP_EVENTO_4
+                     176     
+00E2                 177     EVENTO_3:
+00E2 753103          178             MOV EVENTO, #0x03
+00E5 22              179             RET     
+                     180     
+00E6                 181     COMP_EVENTO_4:
+00E6 100102          182             JBC FLAG_1S, EVENTO_4
+00E9 8004            183             SJMP EVENTO_0
+                     184     
+00EB                 185     EVENTO_4:
+00EB 753104          186             MOV EVENTO, #0x04
+00EE 22              187             RET
+                     188     
+00EF                 189     EVENTO_0:
+00EF 753100          190             MOV EVENTO, #0x00
+00F2 22              191             RET 
+                     192     
+                     193     ;------------------------------------------------------------------------------------------
+                             ---
+                     194     
+00F3                 195     MAQ_ESTADOS:
+00F3 E530            196             MOV A, ESTADO
+00F5 23              197             RL A
+00F6 9000FA          198             MOV DPTR, #LISTA_EST
+00F9 73              199             JMP @A+DPTR
+                     200     
+00FA                 201     LISTA_EST:
+00FA 2100            202             AJMP ESTADO_0
+00FC 2103            203             AJMP ESTADO_1
+00FE 2106            204             AJMP ESTADO_2
+                     205     
+0100                 206     ESTADO_0:
+0100 3109            207             ACALL MQ_EVEN_0
+0102 22              208             RET
+                     209     
+0103                 210     ESTADO_1:
+0103 311A            211             ACALL MQ_EVEN_1
+0105 22              212             RET
+                     213     
+0106                 214     ESTADO_2:
+0106 312B            215             ACALL MQ_EVEN_2
+0108 22              216             RET
+                     217     
+                     218     ;------------------------------------------------------------------------------------------
+                             ---
+                     219     
+0109                 220     MQ_EVEN_0:
+0109 E531            221             MOV A, EVENTO
+010B 23              222             RL A
+010C 900110          223             MOV DPTR, #LIST_EVEN_MQ_EVEN_0
+010F 73              224             JMP @A+DPTR
+0110                 225     LIST_EVEN_MQ_EVEN_0:
+0110 213C            226             AJMP ME0_EV_0
+0112 213F            227             AJMP ME0_EV_1
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     5
+
+0114 214C            228             AJMP ME0_EV_2
+0116 214D            229             AJMP ME0_EV_3
+0118 214E            230             AJMP ME0_EV_4
+                     231     
+                     232     ;------------------------------------------------------------------------------------------
+                             ---
+                     233     
+011A                 234     MQ_EVEN_1:
+011A E531            235             MOV A, EVENTO
+011C 23              236             RL A
+011D 900121          237             MOV DPTR, #LIST_EVEN_MQ_EVEN_1
+0120 73              238             JMP @A+DPTR
+0121                 239     LIST_EVEN_MQ_EVEN_1:
+0121 214F            240             AJMP ME1_EV_0
+0123 2150            241             AJMP ME1_EV_1
+0125 2151            242             AJMP ME1_EV_2
+0127 215D            243             AJMP ME1_EV_3
+0129 215E            244             AJMP ME1_EV_4
+                     245     
+                     246     ;------------------------------------------------------------------------------------------
+                             ---
+                     247     
+012B                 248     MQ_EVEN_2:
+012B E531            249             MOV A, EVENTO
+012D 23              250             RL A
+012E 900132          251             MOV DPTR, #LIST_EVEN_MQ_EVEN_2
+0131 73              252             JMP @A+DPTR
+0132                 253     LIST_EVEN_MQ_EVEN_2:
+0132 215F            254             AJMP ME2_EV_0
+0134 2160            255             AJMP ME2_EV_1
+0136 2161            256             AJMP ME2_EV_2
+0138 2162            257             AJMP ME2_EV_3
+013A 2168            258             AJMP ME2_EV_4
+                     259     
+                     260     ;------------------------------------------------------------------------------------------
+                             ---
+                     261     
+013C                 262     ME0_EV_0:
+013C 3170            263             ACALL DORMIR
+013E 22              264             RET
+                     265     
+013F                 266     ME0_EV_1:
+013F E550            267             MOV A, 0x50                        ; mira la primera instruccion del programa
+0141 54F0            268             ANL A, #0xF0                       ; aplicar mascara para conseguir el nibble alto
+0143 B4C006          269             CJNE A, #C_PROFUNDIDAD, ME0_EV_2   ; mirar si es C
+0146 3174            270             ACALL INICIAR
+0148 753001          271             MOV ESTADO, #0x01
+014B 22              272             RET
+                     273     
+014C                 274     ME0_EV_2:
+014C 22              275             RET
+                     276     
+014D                 277     ME0_EV_3:
+014D 22              278             RET
+                     279     
+014E                 280     ME0_EV_4:
+014E 22              281             RET
+                     282     ;------------------------------------------------------------------------------------------
+                             ---
+                     283     
+014F                 284     ME1_EV_0:
+014F 22              285             RET
+                     286     
+0150                 287     ME1_EV_1:
+0150 22              288             RET
+                     289     
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     6
+
+0151                 290     ME1_EV_2:
+0151 300306          291             JNB FLAG_FIN, ME1_BIF
+0154 3183            292             ACALL PARAR
+0156 753000          293             MOV ESTADO, #0x00       ; moverse a REPOSO
+0159 22              294             RET
+                     295     
+015A                 296     ME1_BIF:
+015A 51F6            297             ACALL BIF_INS
+015C 22              298             RET
+                     299     
+015D                 300     ME1_EV_3:
+015D 22              301             RET
+                     302     
+015E                 303     ME1_EV_4:
+015E 22              304             RET
+                     305     ;------------------------------------------------------------------------------------------
+                             ---
+                     306     
+015F                 307     ME2_EV_0:
+015F 22              308             RET
+                     309     
+0160                 310     ME2_EV_1:
+0160 22              311             RET
+                     312     
+0161                 313     ME2_EV_2:
+0161 22              314             RET
+                     315     
+0162                 316     ME2_EV_3:
+0162 31A3            317             ACALL EMERGER_OBST
+0164 753001          318             MOV ESTADO, #0x01
+0167 22              319             RET
+                     320     
+0168                 321     ME2_EV_4:
+0168 E536            322             MOV A, TIEMPO
+016A B4013B          323             CJNE A, #0x01, DESCONTAR
+016D 51F6            324             ACALL BIF_INS
+016F 22              325             RET
+                     326     
+                     327     ;------------------------------------------------------------------------------------------
+                             ---
+                     328     ; ACCIONES
+                     329     ;------------------------------------------------------------------------------------------
+                             ---
+                     330     
+0170                 331     DORMIR:                                ; ACC_1 -
+0170 438701          332             ORL PCON,#0x01                     ; pone el bit 0 del PCON (IDL - modo IDLE)
+0173 22              333             RET
+                     334     
+0174                 335     INICIAR:                               ; ACC_2 -
+0174 C2C0            336             CLR LED_FIN                        ; apagar los LED al iniciar el recorrido
+0176 C2C1            337             CLR LED_OBST                       ;
+0178 75FE5D          338             MOV PWMP, #PWM_PRESC               ; el modo reposo reinicia el PWM, se le mete el 
+                             valor de nuevo
+017B 753250          339             MOV PUNTERO, #0x50                 ; guardar la direccion de la primera instruccion
+017E 5159            340             ACALL LEER_INS
+0180 51C6            341             ACALL PREP_VERTICAL
+0182 22              342             RET
+                     343     
+0183                 344     PARAR:                                 ; ACC_3 -
+0183 75FC00          345             MOV PWM0, #PWM_PARADO              ; PWM1 Y PWM0 a 0
+0186 75FD00          346             MOV PWM1, #PWM_PARADO              ;
+0189 C296            347             CLR P1.6                           ; parar el dron
+018B C297            348             CLR P1.7                           ;
+018D C2A7            349             CLR P2.7                           ; apagar los dp
+018F C287            350             CLR P0.7
+0191 22              351             RET
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     7
+
+                     352     
+0192                 353     INS_VERTICAL:                          ; ACC_4 -
+0192 5159            354             ACALL LEER_INS
+0194 51C6            355             ACALL PREP_VERTICAL
+0196 22              356             RET
+                     357     
+0197                 358     INS_EMERGER:                           ; ACC_5 -
+0197 5159            359             ACALL LEER_INS
+0199 D2C0            360             SETB LED_FIN
+019B 5169            361             ACALL EMERGER
+019D 22              362             RET
+                     363     
+019E                 364     INS_HORIZONTAL:                        ; ACC_6 -
+019E 5159            365             ACALL LEER_INS
+01A0 5179            366             ACALL PREP_HORIZONTAL
+01A2 22              367             RET
+                     368     
+01A3                 369     EMERGER_OBST:                          ; ACC_7 -
+01A3 D2C1            370             SETB LED_OBST                      ; encender el LED de obstaculo
+01A5 5169            371             ACALL EMERGER
+01A7 22              372             RET
+                     373     
+01A8                 374     DESCONTAR:                             ; ACC_8 -
+01A8 1536            375             DEC TIEMPO
+01AA 5119            376             ACALL MOSTRAR
+01AC 22              377             RET
+                     378     
+                     379     ;------------------------------------------------------------------------------------------
+                             ---
+                     380     ; SUBRUTINAS DE INICIALIZACIONES
+                     381     ;------------------------------------------------------------------------------------------
+                             ---
+01AD                 382     INICIALIZACIONES:
+01AD 31BA            383             ACALL INICIALIZAR_VBLES
+01AF 31E6            384             ACALL INICIALIZAR_SALIDAS
+01B1 31FD            385             ACALL INICIALIZAR_PUERTOS
+01B3 5100            386             ACALL INICIALIZAR_TIMER
+01B5 510C            387             ACALL INICIALIZAR_ADC
+01B7 5110            388             ACALL INICIALIZAR_INT
+01B9 22              389             RET
+                     390     
+01BA                 391     INICIALIZAR_VBLES:
+01BA C200            392             CLR FLAG_10MS    ; inicializar las 5 flags declaradas
+01BC C201            393             CLR FLAG_1S
+01BE C202            394             CLR FLAG_BOTON
+01C0 C203            395             CLR FLAG_FIN
+01C2 C204            396             CLR BIT_SENTIDO
+01C4 753000          397             MOV ESTADO, #0x00       ; inicializar las variables de la maq. de est.
+01C7 753100          398             MOV EVENTO, #0x00
+01CA 753A64          399             MOV CONT_TICKS, #TICKS_SEC
+01CD 753250          400             MOV PUNTERO, #0x50      ;apunta a la primera instrucción
+01D0 753300          401             MOV INSTR, #0x00
+01D3 753400          402             MOV PARAM, #0x00
+01D6 753500          403             MOV ACCION, #0x00
+01D9 753600          404             MOV TIEMPO, #0x00
+01DC 753700          405             MOV OBJETIVO, #0x00
+01DF 753800          406             MOV PROF, #0x00
+01E2 753900          407             MOV DIST, #0x00
+01E5 22              408             RET
+                     409     
+01E6                 410     INICIALIZAR_SALIDAS:
+01E6 75A040          411             MOV P2, #0x40   ; aplicamos mascara para seleccionar el segmento G deambos displays
+01E9 758040          412             MOV P0, #0x40   
+01EC C2C0            413             CLR LED_FIN     ; leds apagados 
+01EE C2C1            414             CLR LED_OBST
+01F0 75FC00          415             MOV PWM0, #PWM_PARADO
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     8
+
+01F3 75FD00          416             MOV PWM1, #PWM_PARADO
+01F6 C296            417             CLR P1.6
+01F8 C297            418             CLR P1.7
+01FA C295            419             CLR SUBIR_BAJAR
+01FC 22              420             RET
+                     421     
+01FD                 422     INICIALIZAR_PUERTOS:
+01FD D2B2            423             SETB P3.2
+01FF 22              424             RET
+                     425     
+0200                 426     INICIALIZAR_TIMER:
+0200 758901          427             MOV TMOD, #0x01      ; timer 0 en modo 1 (16 bits), reloj interno y sin GATE
+0203 758CB1          428             MOV TH0, #TH_RECARGA ; primera carga del timer
+0206 758AE0          429             MOV TL0, #TL_RECARGA
+0209 D28C            430             SETB TR0             ; arrancar el timer 0
+020B 22              431             RET
+                     432     
+020C                 433     INICIALIZAR_ADC:
+020C 75C500          434             MOV ADCON, #0x00     ; canal 0, arranque por SW, sin conversion ni resultado pendie
+                             nte
+020F 22              435             RET
+                     436     
+0210                 437     INICIALIZAR_INT:
+0210 D288            438             SETB IT0             ; INT0 por flanco de bajada
+0212 D2A9            439             SETB ET0             ; habilitar interrupcion del timer 0
+0214 D2A8            440             SETB EX0             ; habilitar interrupcion externa 0 (boton)
+0216 D2AF            441             SETB EA              ; habilitar interrupciones (general)
+0218 22              442             RET
+                     443             
+                     444     
+                     445     ;------------------------------------------------------------------------------------------
+                             ---
+                     446     ; SUBRUTINAS
+                     447     ;------------------------------------------------------------------------------------------
+                             ---
+                     448     
+0219                 449     MOSTRAR:
+0219 900249          450             MOV DPTR,#TABLA_7SEG
+021C E533            451             MOV A, INSTR
+021E B4C00D          452             CJNE A, #C_PROFUNDIDAD, MOSTRAR_HORIZONTAL
+0221 75A039          453             MOV P2, #0x39
+0224 E534            454             MOV A, PARAM
+0226 93              455             MOVC A, @A+DPTR
+0227 F580            456             MOV P0, A
+0229 D2A7            457             SETB P2.7
+022B D287            458             SETB P0.7
+022D 22              459             RET
+022E                 460     MOSTRAR_HORIZONTAL:              ; A, D o E: letra y segundos, sin dp
+022E E535            461             MOV A, ACCION
+0230 B4A005          462             CJNE A, #A_AVANZAR, MOSTRAR_NO_A
+0233 75A077          463             MOV P2, #0x77                ; "A"
+0236 800B            464             SJMP MOSTRAR_NUM
+0238                 465     MOSTRAR_NO_A:
+0238 B4D005          466             CJNE A, #D_DERECHA, MOSTRAR_E
+023B 75A05E          467             MOV P2, #0x5E                ; "D"
+023E 8003            468             SJMP MOSTRAR_NUM
+0240                 469     MOSTRAR_E:
+0240 75A079          470             MOV P2, #0x79                ; "E"
+0243                 471     MOSTRAR_NUM:
+0243 E536            472             MOV A, TIEMPO
+0245 93              473             MOVC A, @A+DPTR
+0246 F580            474             MOV P0, A
+0248 22              475             RET
+                     476     
+0249                 477     TABLA_7SEG:                                             ; tabla de valores para el display 
+                             de 7 segmentos
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE     9
+
+0249 3F065B4F        478             DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07   ; 0-7
+024D 666D7D07                
+0251 7F6F777C        479             DB 0x7F, 0x6F, 0x77, 0x7C, 0x39, 0x5E, 0x79, 0x71   ; 8-F
+0255 395E7971                
+                     480     
+                     481     
+0259                 482     LEER_INS:
+0259 A832            483             MOV R0, PUNTERO       ; leemos el valor de la instruccion
+025B E6              484             MOV A, @R0
+025C F9              485             MOV R1, A              ; auxiliar
+025D 54F0            486             ANL A, #0xF0           ; separamos nibble alto (tipo de instruccion)
+025F F533            487             MOV INSTR, A
+0261 E9              488             MOV A, R1
+0262 540F            489             ANL A, #0x0F           ; separamos nibble bajo (cantidad o duracion)
+0264 F534            490             MOV PARAM, A
+0266 0532            491             INC PUNTERO
+0268 22              492             RET
+                     493     
+0269                 494     EMERGER:
+0269 753743          495             MOV OBJETIVO, #ADC_SUPERFICIE
+026C D203            496             SETB FLAG_FIN
+026E D204            497             SETB BIT_SENTIDO
+0270 D295            498             SETB SUBIR_BAJAR
+0272 75FD00          499             MOV PWM1, #PWM_PARADO
+0275 75FCB3          500             MOV PWM0, #PWM_VERTICAL
+0278 22              501             RET
+                     502     
+0279                 503     PREP_HORIZONTAL:
+0279 E533            504             MOV A, INSTR
+027B F535            505             MOV ACCION, A       ; A, D o E
+027D E534            506             MOV A, PARAM
+027F F536            507             MOV TIEMPO, A        ; segundos de la accion
+0281 75FC4D          508             MOV PWM0, #PWM_MANTENER  ; mantener profundidad
+0284 75FD80          509             MOV PWM1, #PWM_AVANCE    ; girar/avanzar
+0287 C295            510             CLR SUBIR_BAJAR   
+0289 E535            511             MOV A, ACCION
+028B B4A006          512             CJNE A, #A_AVANZAR, PREP_H_NO_A
+028E D297            513             SETB P1.7       ; "11": avanzar
+0290 D296            514             SETB P1.6
+0292 800D            515             SJMP PREP_H_MOSTRAR
+                     516     
+0294                 517     PREP_H_NO_A:
+0294 B4D006          518             CJNE A, #D_DERECHA, PREP_H_E
+0297 D297            519             SETB P1.7      ; "10": izquierda
+0299 C296            520             CLR P1.6
+029B 8004            521             SJMP PREP_H_MOSTRAR
+                     522     
+029D                 523     PREP_H_E:
+029D C297            524             CLR P1.7       ; "01": derecha
+029F D296            525             SETB P1.6
+                     526     
+02A1                 527     PREP_H_MOSTRAR:
+02A1 5119            528             ACALL MOSTRAR
+02A3 22              529             RET
+                     530     
+02A4                 531     MEDIR:
+02A4 53C5EF          532             ANL ADCON, #0xEF     ; bit 4 = 0 -> x
+02A7 75C508          533             MOV ADCON, #0x08
+02AA                 534     MEDIR_ESPERA_PROFUNDIDAD:
+02AA E5C5            535             MOV A, ADCON
+02AC 30E4FB          536             JNB ACC.4, MEDIR_ESPERA_PROFUNDIDAD
+02AF E5C6            537             MOV A, ADCH     ; leer el ADCH
+02B1 F538            538             MOV PROF, A
+02B3 53C5EF          539             ANL ADCON, #0xEF   ; borrar ADCI
+02B6 75C509          540             MOV ADCON, #0x09   ; canal 1 (sonar) y arrancar conversion
+02B9                 541     MEDIR_ESPERA_DISTANCIA:
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE    10
+
+02B9 E5C5            542             MOV A, ADCON
+02BB 30E4FB          543             JNB ACC.4, MEDIR_ESPERA_DISTANCIA
+02BE E5C6            544             MOV A, ADCH
+02C0 F539            545             MOV DIST, A
+02C2 53C5EF          546             ANL ADCON, #0xEF   ; borrar ADCI
+02C5 22              547             RET
+                     548     
+02C6                 549     PREP_VERTICAL:
+02C6 E534            550             MOV A, PARAM              ; objetivo = superficie(adc) + param * nivel actual
+02C8 75F00A          551             MOV B, #ADC_CUENTAS_NIVEL
+02CB A4              552             MUL AB 
+02CC 2443            553             ADD A, #ADC_SUPERFICIE
+02CE F537            554             MOV OBJETIVO, A
+02D0 E538            555             MOV A, PROF
+02D2 C3              556             CLR C
+02D3 9537            557             SUBB A, OBJETIVO
+02D5 4006            558             JC PREP_V_BAJAR
+02D7 D204            559             SETB BIT_SENTIDO
+02D9 D295            560             SETB SUBIR_BAJAR
+02DB 8004            561             SJMP PREP_V_RESTO
+                     562     
+02DD                 563     PREP_V_BAJAR:
+02DD C204            564             CLR BIT_SENTIDO
+02DF C295            565             CLR SUBIR_BAJAR
+                     566     
+02E1                 567     PREP_V_RESTO:
+02E1 75FCB3          568             MOV PWM0, #PWM_VERTICAL
+02E4 75FD00          569             MOV PWM1, #PWM_PARADO
+02E7 C296            570             CLR P1.6
+02E9 C297            571             CLR P1.7
+02EB C203            572             CLR FLAG_FIN
+02ED 5119            573             ACALL MOSTRAR
+02EF 22              574             RET
+                     575     
+02F0                 576     MIRAR_INS:
+02F0 A832            577             MOV R0, PUNTERO 
+02F2 E6              578             MOV A, @R0
+02F3 54F0            579             ANL A, #0xF0           ; nibble alto del puntero
+02F5 22              580             RET
+                     581             
+02F6                 582     BIF_INS:
+02F6 51F0            583             ACALL MIRAR_INS        ; A = tipo de la siguiente ins
+02F8 B4C006          584             CJNE A, #C_PROFUNDIDAD, BIF_NO_C
+02FB 3192            585             ACALL INS_VERTICAL     ; C = ACC_4
+02FD 753001          586             MOV ESTADO, #0x01
+0300 22              587             RET
+                     588     
+0301                 589     BIF_NO_C:
+0301 B4A002          590             CJNE A, #A_AVANZAR, BIF_NO_A
+0304 8008            591             SJMP BIF_HORIZONTAL    ; A: horizontal
+                     592     
+0306                 593     BIF_NO_A:
+0306 B4D002          594             CJNE A, #D_DERECHA, BIF_NO_D
+0309 8003            595             SJMP BIF_HORIZONTAL    ; D: horizontal
+                     596     
+030B                 597     BIF_NO_D:
+030B B4E006          598             CJNE A, #E_IZQUIERDA, BIF_EMERGER
+                     599     
+030E                 600     BIF_HORIZONTAL:            ; A, D o E = ACC_6
+030E 319E            601             ACALL INS_HORIZONTAL
+0310 753002          602             MOV ESTADO, #0x02
+0313 22              603             RET
+                     604     
+0314                 605     BIF_EMERGER:               ; F o invalida = ACC_5
+0314 3197            606             ACALL INS_EMERGER
+0316 753001          607             MOV ESTADO, #0x01
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE    11
+
+0319 22              608             RET
+                     609     
+                     610     END
+                             
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE    12
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E                   T Y P E  V A L U E   ATTRIBUTES
+
+ACC. . . . . . . . . . .  D ADDR   00E0H   A   
+ACCION . . . . . . . . .  N NUMB   0035H   A   
+ADCH . . . . . . . . . .  N NUMB   00C6H   A   
+ADCON. . . . . . . . . .  N NUMB   00C5H   A   
+ADC_CUENTAS_NIVEL. . . .  N NUMB   000AH   A   
+ADC_LIM_OBSTACULO. . . .  N NUMB   000AH   A   
+ADC_SUPERFICIE . . . . .  N NUMB   0043H   A   
+A_AVANZAR. . . . . . . .  N NUMB   00A0H   A   
+B. . . . . . . . . . . .  D ADDR   00F0H   A   
+BIF_EMERGER. . . . . . .  C ADDR   0314H   A   
+BIF_HORIZONTAL . . . . .  C ADDR   030EH   A   
+BIF_INS. . . . . . . . .  C ADDR   02F6H   A   
+BIF_NO_A . . . . . . . .  C ADDR   0306H   A   
+BIF_NO_C . . . . . . . .  C ADDR   0301H   A   
+BIF_NO_D . . . . . . . .  C ADDR   030BH   A   
+BIT_SENTIDO. . . . . . .  B ADDR   0020H.4 A   
+COMP_EVENTO_1. . . . . .  C ADDR   00A9H   A   
+COMP_EVENTO_2. . . . . .  C ADDR   00B2H   A   
+COMP_EVENTO_3. . . . . .  C ADDR   00CDH   A   
+COMP_EVENTO_4. . . . . .  C ADDR   00E6H   A   
+CONTROL. . . . . . . . .  C ADDR   0091H   A   
+CONT_TICKS . . . . . . .  N NUMB   003AH   A   
+C_PROFUNDIDAD. . . . . .  N NUMB   00C0H   A   
+DESCONTAR. . . . . . . .  C ADDR   01A8H   A   
+DIST . . . . . . . . . .  N NUMB   0039H   A   
+DORMIR . . . . . . . . .  C ADDR   0170H   A   
+D_DERECHA. . . . . . . .  N NUMB   00D0H   A   
+EA . . . . . . . . . . .  B ADDR   00A8H.7 A   
+EMERGER. . . . . . . . .  C ADDR   0269H   A   
+EMERGER_OBST . . . . . .  C ADDR   01A3H   A   
+ESTADO . . . . . . . . .  N NUMB   0030H   A   
+ESTADO_0 . . . . . . . .  C ADDR   0100H   A   
+ESTADO_1 . . . . . . . .  C ADDR   0103H   A   
+ESTADO_2 . . . . . . . .  C ADDR   0106H   A   
+ET0. . . . . . . . . . .  B ADDR   00A8H.1 A   
+EVENTO . . . . . . . . .  N NUMB   0031H   A   
+EVENTO_0 . . . . . . . .  C ADDR   00EFH   A   
+EVENTO_1 . . . . . . . .  C ADDR   00AEH   A   
+EVENTO_2 . . . . . . . .  C ADDR   00C9H   A   
+EVENTO_3 . . . . . . . .  C ADDR   00E2H   A   
+EVENTO_4 . . . . . . . .  C ADDR   00EBH   A   
+EX0. . . . . . . . . . .  B ADDR   00A8H.0 A   
+E_IZQUIERDA. . . . . . .  N NUMB   00E0H   A   
+FLAG_10MS. . . . . . . .  B ADDR   0020H.0 A   
+FLAG_1S. . . . . . . . .  B ADDR   0020H.1 A   
+FLAG_BOTON . . . . . . .  B ADDR   0020H.2 A   
+FLAG_FIN . . . . . . . .  B ADDR   0020H.3 A   
+F_FIN. . . . . . . . . .  N NUMB   00F0H   A   
+GEN_COD_EVENT. . . . . .  C ADDR   0097H   A   
+INICIALIZACIONES . . . .  C ADDR   01ADH   A   
+INICIALIZAR_ADC. . . . .  C ADDR   020CH   A   
+INICIALIZAR_INT. . . . .  C ADDR   0210H   A   
+INICIALIZAR_PUERTOS. . .  C ADDR   01FDH   A   
+INICIALIZAR_SALIDAS. . .  C ADDR   01E6H   A   
+INICIALIZAR_TIMER. . . .  C ADDR   0200H   A   
+INICIALIZAR_VBLES. . . .  C ADDR   01BAH   A   
+INICIAR. . . . . . . . .  C ADDR   0174H   A   
+INICIO . . . . . . . . .  C ADDR   008CH   A   
+INSTR. . . . . . . . . .  N NUMB   0033H   A   
+INS_EMERGER. . . . . . .  C ADDR   0197H   A   
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE    13
+
+INS_HORIZONTAL . . . . .  C ADDR   019EH   A   
+INS_VERTICAL . . . . . .  C ADDR   0192H   A   
+ISR_INT0 . . . . . . . .  C ADDR   0080H   A   
+ISR_T0 . . . . . . . . .  C ADDR   0083H   A   
+IT0. . . . . . . . . . .  B ADDR   0088H.0 A   
+LED_FIN. . . . . . . . .  B ADDR   00C0H.0 A   
+LED_OBST . . . . . . . .  B ADDR   00C0H.1 A   
+LEER_INS . . . . . . . .  C ADDR   0259H   A   
+LISTA_EST. . . . . . . .  C ADDR   00FAH   A   
+LIST_EVEN_MQ_EVEN_0. . .  C ADDR   0110H   A   
+LIST_EVEN_MQ_EVEN_1. . .  C ADDR   0121H   A   
+LIST_EVEN_MQ_EVEN_2. . .  C ADDR   0132H   A   
+MAQ_ESTADOS. . . . . . .  C ADDR   00F3H   A   
+ME0_EV_0 . . . . . . . .  C ADDR   013CH   A   
+ME0_EV_1 . . . . . . . .  C ADDR   013FH   A   
+ME0_EV_2 . . . . . . . .  C ADDR   014CH   A   
+ME0_EV_3 . . . . . . . .  C ADDR   014DH   A   
+ME0_EV_4 . . . . . . . .  C ADDR   014EH   A   
+ME1_BIF. . . . . . . . .  C ADDR   015AH   A   
+ME1_EV_0 . . . . . . . .  C ADDR   014FH   A   
+ME1_EV_1 . . . . . . . .  C ADDR   0150H   A   
+ME1_EV_2 . . . . . . . .  C ADDR   0151H   A   
+ME1_EV_3 . . . . . . . .  C ADDR   015DH   A   
+ME1_EV_4 . . . . . . . .  C ADDR   015EH   A   
+ME2_EV_0 . . . . . . . .  C ADDR   015FH   A   
+ME2_EV_1 . . . . . . . .  C ADDR   0160H   A   
+ME2_EV_2 . . . . . . . .  C ADDR   0161H   A   
+ME2_EV_3 . . . . . . . .  C ADDR   0162H   A   
+ME2_EV_4 . . . . . . . .  C ADDR   0168H   A   
+MEDIR. . . . . . . . . .  C ADDR   02A4H   A   
+MEDIR_ESPERA_DISTANCIA .  C ADDR   02B9H   A   
+MEDIR_ESPERA_PROFUNDIDAD  C ADDR   02AAH   A   
+MIRAR_INS. . . . . . . .  C ADDR   02F0H   A   
+MOSTRAR. . . . . . . . .  C ADDR   0219H   A   
+MOSTRAR_E. . . . . . . .  C ADDR   0240H   A   
+MOSTRAR_HORIZONTAL . . .  C ADDR   022EH   A   
+MOSTRAR_NO_A . . . . . .  C ADDR   0238H   A   
+MOSTRAR_NUM. . . . . . .  C ADDR   0243H   A   
+MQ_EVEN_0. . . . . . . .  C ADDR   0109H   A   
+MQ_EVEN_1. . . . . . . .  C ADDR   011AH   A   
+MQ_EVEN_2. . . . . . . .  C ADDR   012BH   A   
+OBJETIVO . . . . . . . .  N NUMB   0037H   A   
+P0 . . . . . . . . . . .  D ADDR   0080H   A   
+P1 . . . . . . . . . . .  D ADDR   0090H   A   
+P2 . . . . . . . . . . .  D ADDR   00A0H   A   
+P3 . . . . . . . . . . .  D ADDR   00B0H   A   
+PARAM. . . . . . . . . .  N NUMB   0034H   A   
+PARAR. . . . . . . . . .  C ADDR   0183H   A   
+PCON . . . . . . . . . .  D ADDR   0087H   A   
+PREP_HORIZONTAL. . . . .  C ADDR   0279H   A   
+PREP_H_E . . . . . . . .  C ADDR   029DH   A   
+PREP_H_MOSTRAR . . . . .  C ADDR   02A1H   A   
+PREP_H_NO_A. . . . . . .  C ADDR   0294H   A   
+PREP_VERTICAL. . . . . .  C ADDR   02C6H   A   
+PREP_V_BAJAR . . . . . .  C ADDR   02DDH   A   
+PREP_V_RESTO . . . . . .  C ADDR   02E1H   A   
+PROF . . . . . . . . . .  N NUMB   0038H   A   
+PUNTERO. . . . . . . . .  N NUMB   0032H   A   
+PWM0 . . . . . . . . . .  N NUMB   00FCH   A   
+PWM1 . . . . . . . . . .  N NUMB   00FDH   A   
+PWMP . . . . . . . . . .  N NUMB   00FEH   A   
+PWM_AVANCE . . . . . . .  N NUMB   0080H   A   
+PWM_MANTENER . . . . . .  N NUMB   004DH   A   
+PWM_PARADO . . . . . . .  N NUMB   0000H   A   
+PWM_PRESC. . . . . . . .  N NUMB   005DH   A   
+PWM_VERTICAL . . . . . .  N NUMB   00B3H   A   
+A51 MACRO ASSEMBLER  SRC_DRON_SUBMARINO                                                   11/16/2026 15:19:18 PAGE    14
+
+SP . . . . . . . . . . .  D ADDR   0081H   A   
+SUBIENDO . . . . . . . .  C ADDR   00C3H   A   
+SUBIR_BAJAR. . . . . . .  B ADDR   0090H.5 A   
+TABLA_7SEG . . . . . . .  C ADDR   0249H   A   
+TAREAS_10MS. . . . . . .  C ADDR   009CH   A   
+TH0. . . . . . . . . . .  D ADDR   008CH   A   
+TH_RECARGA . . . . . . .  N NUMB   00B1H   A   
+TICKS_SEC. . . . . . . .  N NUMB   0064H   A   
+TIEMPO . . . . . . . . .  N NUMB   0036H   A   
+TL0. . . . . . . . . . .  D ADDR   008AH   A   
+TL_RECARGA . . . . . . .  N NUMB   00E0H   A   
+TMOD . . . . . . . . . .  D ADDR   0089H   A   
+TR0. . . . . . . . . . .  B ADDR   0088H.4 A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)
