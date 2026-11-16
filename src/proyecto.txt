@@ -50,7 +50,7 @@ ADCON EQU 0xC5               ; registro de control del ADC
 ADCH EQU 0xC6                ; resultado del ADC (8 bits altos)
 ADC_SUPERFICIE EQU 0x43      ; codigo del ADC en la superficie
 ADC_CUENTAS_NIVEL EQU 0x0A   ; cuentas del ADC que se suman por cada nivel de C
-ADC_LIM_OBSTACULO EQU 0x0A   ; codigo del ADC para detectar obstaculo
+ADC_LIM_OBSTACULO EQU 0x0B   ; codigo del ADC para detectar obstaculo
 BIT_CANAL EQU 0x20.5         ; 0=profundidad, 1=distancia
 
 ;---------------------------------------------------------------------------------------------
@@ -107,12 +107,13 @@ ISR_ADC:
 	JB BIT_CANAL, ADC_DIST
 	MOV PROF, ADCH               ; canal 0 => profundidad
 	ANL ADCON, #0xE0             ; borra ADCI y el canal
-	ORL ADCON, #0x09             ; canal 1 y ADCS=1: empieza la distancia
+	ORL ADCON, #0x01             ; cambiar el canal
+	ORL ADCON, #0x08             ; ADCS = 1
 	SETB BIT_CANAL
 	RETI
 ADC_DIST:
-	MOV DIST, ADCH               ; canal 1 => distancia
-	ANL ADCON, #0xE0             ; borra ADCI y deja el canal en 000 para el siguiente tick
+	MOV DIST, ADCH               ; guardar distancia
+	ANL ADCON, #0xE0             ; borra ADCI y deja el canal en 0 para el siguiente tick
 	CLR BIT_CANAL
 	RETI
 
@@ -329,8 +330,10 @@ ME2_EV_3:
 
 ME2_EV_4:
 	MOV A, TIEMPO
-	CJNE A, #0x01, DESCONTAR
-	ACALL BIF_INS
+	JZ  FIN_ACCION             ; sirve en caso de que pongan una instruccion de 0 segundos...
+	CJNE A, #0x01, DESCONTAR   ; TIEMPO != 1 se decrementa en 1
+FIN_ACCION:
+	ACALL BIF_INS              ; si TIEMPO es igual a 0 o 1 se pasa a la siguiente instruccion
 	RET
 
 ;---------------------------------------------------------------------------------------------
@@ -348,7 +351,7 @@ INICIAR:                               ; ACC_2 -
 	SETB IE.6                          ; EAD: empieza a medir
 	CLR LED_FIN                        ; apagar los LED al iniciar el recorrido
 	CLR LED_OBST                       ;
-	MOV PWMP, #PWM_PRESC               ; el modo reposo reinicia el PWM, se le mete el valor de nuevo
+	MOV PWMP, #PWM_PRESC               ; se recarga el PWM
 	MOV PUNTERO, #0x50                 ; guardar la direccion de la primera instruccion
 	ACALL LEER_INS
 	ACALL PREP_VERTICAL
@@ -416,7 +419,7 @@ INICIALIZAR_VBLES:
 	MOV TIEMPO, #0x00
 	MOV OBJETIVO, #0x00
 	MOV PROF, #0x00
-	MOV DIST, #0x00
+	MOV DIST, #0xFF                   ; iniciamos en FF porque 00 es que ha pegado a un obstaculo
 	RET
 
 INICIALIZAR_SALIDAS:                 ; tras el reset los latches valen 1: se ponen a 0 los de salida
@@ -447,7 +450,7 @@ INICIALIZAR_ADC:
 	RET
 
 INICIALIZAR_INT:
-	SETB IT0                        ; INT0 por flanco de bajada (asi se ignora el rebote del boton)
+	SETB IT0                        ; INT0 por flanco de bajada
 	SETB ET0                        ; timer 0: siempre activo
 	SETB EX0                        ; boton: el dron arranca en superficie
 	SETB EA                         ; habilitar las interrupciones generales
@@ -492,7 +495,7 @@ TABLA_7SEG:                                             ; tabla de valores para 
 
 
 LEER_INS:
-	MOV R0, PUNTERO       ; leemos el valor de la instruccion
+	MOV R0, PUNTERO        ; leemos el valor de la instruccion
 	MOV A, @R0
 	MOV R1, A              ; copiar en R1 la instruccion entera
 	ANL A, #0xF0           ; separamos nibble alto (la instruccion)
@@ -508,8 +511,10 @@ EMERGER:
 	SETB FLAG_FIN
 	SETB BIT_SENTIDO
 	SETB P1.5
-	MOV PWM1, #PWM_PARADO
 	MOV PWM0, #PWM_VERTICAL
+	MOV PWM1, #PWM_PARADO
+	CLR P1.6                  ; Giro_Avance = 00 (parado)
+	CLR P1.7
 	MOV P2, #0xF1             ; "F" con dp (0x71 + 0x80)
 	MOV P0, #0x80             ; segundo display apagado, solo el dp
 	RET
@@ -529,17 +534,14 @@ PREP_HORIZONTAL:
 	SETB P1.7       ; "11": avanzar
 	SETB P1.6
 	SJMP PREP_H_MOSTRAR
-
 PREP_H_NO_A:
 	CJNE A, #D_DERECHA, PREP_H_E
 	SETB P1.7      ; "10": derecha
 	CLR P1.6
 	SJMP PREP_H_MOSTRAR
-
 PREP_H_E:
 	CLR P1.7       ; "01": izquierda
 	SETB P1.6
-
 PREP_H_MOSTRAR:
 	ACALL MOSTRAR
 	RET
@@ -549,23 +551,27 @@ MEDIR:
 	RET
 
 PREP_VERTICAL:
-	MOV A, PARAM              ; objetivo = superficie(adc) + param * nivel actual
+	MOV A, PARAM
+	CLR C                      ; poner carry a 0
+	SUBB A, #0x05              ; el carry va a ser 1 si PARAM < 5
+	JC  PREP_V_NIVEL_OK
+	MOV PARAM, #0x04           ; nivel > 4 => se limita a 4 (10 m)
+PREP_V_NIVEL_OK:
+	MOV A, PARAM               ; objetivo = superficie(adc) + param * cuentas por nivel
 	MOV B, #ADC_CUENTAS_NIVEL
 	MUL AB
 	ADD A, #ADC_SUPERFICIE
 	MOV OBJETIVO, A
-	MOV A, PROF
+	MOV A, PROF                ; subir o bajar?
 	CLR C
-	SUBB A, OBJETIVO
+	SUBB A, OBJETIVO           ; el carry es 1 si PROF < OBJETIVO, hay que bajar
 	JC PREP_V_BAJAR
-	SETB BIT_SENTIDO
+	SETB BIT_SENTIDO           ; subir
 	SETB P1.5
 	SJMP PREP_V_RESTO
-
 PREP_V_BAJAR:
-	CLR BIT_SENTIDO
+	CLR BIT_SENTIDO            ; bajar
 	CLR P1.5
-
 PREP_V_RESTO:
 	MOV PWM0, #PWM_VERTICAL
 	MOV PWM1, #PWM_PARADO
@@ -592,23 +598,18 @@ BIF_INS:
 	ACALL INS_VERTICAL                     ; C = ACC_4
 	MOV ESTADO, #0x01
 	RET
-
 BIF_NO_C:
 	CJNE A, #A_AVANZAR, BIF_NO_A
 	SJMP BIF_HORIZONTAL                    ; A: horizontal
-
 BIF_NO_A:
 	CJNE A, #D_DERECHA, BIF_NO_D
 	SJMP BIF_HORIZONTAL                    ; D: horizontal
-
 BIF_NO_D:
 	CJNE A, #E_IZQUIERDA, BIF_EMERGER
-
 BIF_HORIZONTAL:                            ; A, D o E = ACC_6
 	ACALL INS_HORIZONTAL
 	MOV ESTADO, #0x02
 	RET
-
 BIF_EMERGER:                               ; F o invalida = ACC_5
 	ACALL INS_EMERGER
 	MOV ESTADO, #0x01
