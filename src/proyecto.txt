@@ -25,15 +25,15 @@ DIST EQU 0x39              ; ultima medida del canal 1 del ADC
 CONT_TICKS EQU 0x3A        ; se carga con el valor 100, y decrementa por cada tick de 10ms
 
 ;---------------------------------------------------------------------------------------------
-;				     TIMERS
+;				     TIMER
 ;---------------------------------------------------------------------------------------------
 
 TH_RECARGA EQU 0xB1       ; valor de recarga del TH para el timer 0 de 10ms (TH0)
 TL_RECARGA EQU 0xE0       ; valor de recarga del TL para el timer 0 de 10ms (TL0)
-TICKS_SEC EQU 0x64        ; numero de ticks que tiene que hacer en un segundo
+TICKS_SEC EQU 0x64        ; numero de ticks que tiene que hacer en un segundo (100 ticks)
 
 ;---------------------------------------------------------------------------------------------
-;				  INSTRUCCIONES
+;				  INSTRUCCIONES DE ACCION
 ;---------------------------------------------------------------------------------------------
 
 C_PROFUNDIDAD EQU 0xC0    ; control de profundidad, el nivel va en el nibble bajo
@@ -60,7 +60,7 @@ LED_FIN EQU 0xC0.0           ; P4.0: recorrido terminado
 LED_OBST EQU 0xC0.1          ; P4.1: abortado por obstaculo
 
 ;---------------------------------------------------------------------------------------------
-;                                    MOTORES
+;                                    CONTROL DE HELICES
 ;---------------------------------------------------------------------------------------------
 PWM0 EQU 0xFC                ; duty cycle de las helices de profundidad
 PWM1 EQU 0xFD                ; duty cycle de las helices de giro/avance
@@ -73,6 +73,8 @@ PWM_VERTICAL EQU 0xB3        ; 70 % (PWM0)
 PWM_AVANCE EQU 0x80          ; 50 % (PWM1)
 PWM_PRESC EQU 0x5D           ; valor que se carga en el registro del prescaler del PWM
 
+;---------------------------------------------------------------------------------------------
+; ////////////////////////////////////////////////////////////////////////////////////////////
 ;---------------------------------------------------------------------------------------------
 
 ORG 0x0000
@@ -90,7 +92,7 @@ LJMP ISR_ADC
 ORG 0x0080              ; el codigo empieza despues de todos los vectores del 80C552
 
 ;---------------------------------------------------------------------------------------------
-;                        SUBRUTINAS DE ATENCION A INTERRUPCIONES [OK]
+;                        SUBRUTINAS DE ATENCION A INTERRUPCIONES 
 ;---------------------------------------------------------------------------------------------
 
 ISR_INT0:
@@ -113,12 +115,12 @@ ISR_ADC:
 	RETI
 ADC_DIST:
 	MOV DIST, ADCH               ; guardar distancia
-	ANL ADCON, #0xE0             ; borra ADCI y deja el canal en 0 para el siguiente tick
+	ANL ADCON, #0xE0             ; borra ADCI y deja el canal en 0 para la siguiente medida
 	CLR BIT_CANAL
 	RETI
 
 ;---------------------------------------------------------------------------------------------
-;                                    BUCLE PRINCIPAL [OK]
+;                                    BUCLE PRINCIPAL
 ;---------------------------------------------------------------------------------------------
 
 INICIO:
@@ -130,7 +132,7 @@ CONTROL:
 	SJMP CONTROL
 
 ;---------------------------------------------------------------------------------------------
-;                                  GENERADOR DE EVENTOS [OK]
+;                                  GENERADOR DE EVENTOS
 ;---------------------------------------------------------------------------------------------
 GEN_COD_EVENT:
 	JBC FLAG_10MS, TAREAS_10MS
@@ -330,10 +332,10 @@ ME2_EV_3:
 
 ME2_EV_4:
 	MOV A, TIEMPO
-	JZ  FIN_ACCION             ; proteccion extra: BIF_INS ya no deja empezar una accion de 0 segundos
-	CJNE A, #0x01, DESCONTAR   ; TIEMPO != 1 se decrementa en 1
+	JZ  FIN_ACCION
+	CJNE A, #0x01, DESCONTAR
 FIN_ACCION:
-	ACALL BIF_INS              ; si TIEMPO es igual a 0 o 1 se pasa a la siguiente instruccion
+	ACALL BIF_INS
 	RET
 
 ;---------------------------------------------------------------------------------------------
@@ -348,7 +350,7 @@ INICIAR:                               ; ACC_2 -
 	CLR EX0                            ; sumergido: el boton no se atiende
 	ANL ADCON, #0xE0                   ; borra un ADCI que haya quedado pendiente
 	CLR BIT_CANAL                      ; la primera medida sera la profundidad
-	SETB IE.6                          ; EAD: activa interrupciones del ADC
+	SETB IE.6                          ; activa interrupciones del ADC (EAD = 1)
 	ACALL MEDIR
 	CLR LED_FIN                        ; apagar los LED al iniciar el recorrido
 	CLR LED_OBST                       ;
@@ -365,33 +367,33 @@ PARAR:                                 ; ACC_3 -
 	CLR P1.7                           ;
 	MOV P2, #0x40                      ; displays "- -" sin dp
 	MOV P0, #0x40
-	CLR IE.6                           ; EAD: deja de medir
-	CLR IE0                            ; borra pulsaciones recogidas mientras estaba desactivada
+	CLR IE.6                           ; se desactivan las interrupciones del ADC
+	CLR IE0                            ; borra pulsaciones de boton recogidas mientras estaba desactivado
 	SETB EX0                           ; en la superficie el boton vuelve a funcionar
 	RET
 
-INS_VERTICAL:                          ; ACC_4
+INS_VERTICAL:                          ; ACC_4 - ejecuta una instruccion vertical
 	ACALL LEER_INS
 	ACALL PREP_VERTICAL
 	RET
 
-INS_EMERGER:                           ; ACC_5
+INS_EMERGER:                           ; ACC_5 - emerge por acabar el recorrido
 	ACALL LEER_INS
 	SETB LED_FIN
 	ACALL EMERGER
 	RET
 
-INS_HORIZONTAL:                        ; ACC_6
+INS_HORIZONTAL:                        ; ACC_6 - ejecuta una instruccion horizontal
 	ACALL LEER_INS
 	ACALL PREP_HORIZONTAL
 	RET
 
-EMERGER_OBST:                          ; ACC_7 -
-	SETB LED_OBST                      ; encender el LED de obstaculo
+EMERGER_OBST:                          ; ACC_7 - aborta el recorrido y emerge
+	SETB LED_OBST                  ; encender el LED de obstaculo
 	ACALL EMERGER
 	RET
 
-DESCONTAR:                             ; ACC_8
+DESCONTAR:                             ; ACC_8 - decrementa la variable TIEMPO (segundos de instruccion horizontal)
 	DEC TIEMPO
 	ACALL MOSTRAR
 	RET
@@ -490,19 +492,19 @@ MOSTRAR_NUM:
 	MOV P0, A
 	RET
 
-TABLA_7SEG:                                             ; tabla de valores para el display de 7 segmentos
+TABLA_7SEG:                                                 ; tabla de valores para el display de 7 segmentos
 	DB 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07   ; 0-7
 	DB 0x7F, 0x6F, 0x77, 0x7C, 0x39, 0x5E, 0x79, 0x71   ; 8-F
 
 
 LEER_INS:
-	MOV R0, PUNTERO        ; leemos el valor de la instruccion
+	MOV R0, PUNTERO                        ; leemos el valor de la instruccion
 	MOV A, @R0
-	MOV R1, A              ; copiar en R1 la instruccion entera
-	ANL A, #0xF0           ; separamos nibble alto (la instruccion)
+	MOV R1, A                              ; copiar en R1 la instruccion entera
+	ANL A, #0xF0                           ; separamos nibble alto (la instruccion)
 	MOV INSTR, A
 	MOV A, R1
-	ANL A, #0x0F           ; separamos nibble bajo (tiempo o profundidad)
+	ANL A, #0x0F                           ; separamos nibble bajo (tiempo o profundidad)
 	MOV PARAM, A
 	INC PUNTERO
 	RET
@@ -514,64 +516,64 @@ EMERGER:
 	SETB P1.5
 	MOV PWM0, #PWM_VERTICAL
 	MOV PWM1, #PWM_PARADO
-	CLR P1.6                  ; Giro_Avance = 00 (parado)
+	CLR P1.6                               ; Giro_Avance = 00 (parado)
 	CLR P1.7
-	MOV P2, #0xF1             ; "F" con dp (0x71 + 0x80)
-	MOV P0, #0x80             ; segundo display apagado, solo el dp
+	MOV P2, #0xF1                          ; "F" con dp (0x71 + 0x80)
+	MOV P0, #0x80                          ; segundo display apagado, solo el dp
 	RET
 
 PREP_HORIZONTAL:
 	MOV A, INSTR
-	MOV ACCION, A             ; A, D o E
+	MOV ACCION, A                          ; A, D o E
 	MOV A, PARAM
-	MOV TIEMPO, A             ; segundos de la accion
-	MOV CONT_TICKS, #TICKS_SEC ; el primer segundo empieza ahora
+	MOV TIEMPO, A                          ; segundos de la accion
 	CLR FLAG_1S
-	MOV PWM0, #PWM_MANTENER   ; mantener profundidad
-	MOV PWM1, #PWM_AVANCE     ; girar/avanzar
-	CLR P1.5            ; Subir_Bajar: 1 subir, 0 bajar
+	MOV CONT_TICKS, #TICKS_SEC             ; el primer segundo empieza ahora
+	MOV PWM0, #PWM_MANTENER                ; mantener profundidad
+	MOV PWM1, #PWM_AVANCE                  ; girar/avanzar
+	CLR P1.5                               ; Subir_Bajar: 1 subir, 0 bajar
 	MOV A, ACCION
 	CJNE A, #A_AVANZAR, PREP_H_NO_A
-	SETB P1.7       ; "11": avanzar
+	SETB P1.7                              ; "11": avanzar
 	SETB P1.6
 	SJMP PREP_H_MOSTRAR
 PREP_H_NO_A:
 	CJNE A, #D_DERECHA, PREP_H_E
-	SETB P1.7      ; "10": derecha
+	SETB P1.7                              ; "10": derecha
 	CLR P1.6
 	SJMP PREP_H_MOSTRAR
 PREP_H_E:
-	CLR P1.7       ; "01": izquierda
+	CLR P1.7                               ; "01": izquierda
 	SETB P1.6
 PREP_H_MOSTRAR:
 	ACALL MOSTRAR
 	RET
 
 MEDIR:
-	ORL ADCON, #0x08          ; empieza la primera medida
+	ORL ADCON, #0x08                       ; empieza la primera medida
 	RET
 
 PREP_VERTICAL:
 	MOV A, PARAM
-	CLR C                      ; poner carry a 0
-	SUBB A, #0x05              ; el carry va a ser 1 si PARAM < 5
+	CLR C                                  ; poner carry a 0
+	SUBB A, #0x05                          ; el carry va a ser 1 si PARAM < 5
 	JC  PREP_V_NIVEL_OK
-	MOV PARAM, #0x04           ; nivel > 4 => se limita a 4 (10 m)
+	MOV PARAM, #0x04                       ; nivel > 4 => se limita a 4 (10 m)
 PREP_V_NIVEL_OK:
-	MOV A, PARAM               ; objetivo = superficie(adc) + param * cuentas por nivel
+	MOV A, PARAM                           ; objetivo = superficie(adc) + param * cuentas por nivel
 	MOV B, #ADC_CUENTAS_NIVEL
 	MUL AB
 	ADD A, #ADC_SUPERFICIE
 	MOV OBJETIVO, A
-	MOV A, PROF                ; subir o bajar?
+	MOV A, PROF                            ; subir o bajar?
 	CLR C
-	SUBB A, OBJETIVO           ; el carry es 1 si PROF < OBJETIVO, hay que bajar
+	SUBB A, OBJETIVO                       ; el carry es 1 si PROF < OBJETIVO, hay que bajar
 	JC PREP_V_BAJAR
-	SETB BIT_SENTIDO           ; subir
+	SETB BIT_SENTIDO                       ; subir
 	SETB P1.5
 	SJMP PREP_V_RESTO
 PREP_V_BAJAR:
-	CLR BIT_SENTIDO            ; bajar
+	CLR BIT_SENTIDO                        ; bajar
 	CLR P1.5
 PREP_V_RESTO:
 	MOV PWM0, #PWM_VERTICAL
@@ -584,17 +586,17 @@ PREP_V_RESTO:
 
 MIRAR_INS:
 	MOV A, PUNTERO
-	JB ACC.7, MIRAR_FIN    ; PUNTERO >= 80H: fin de la memoria del programa
+	JB ACC.7, MIRAR_FIN                    ; PUNTERO >= 80H: fin de la memoria del programa
 	MOV R0, A
 	MOV A, @R0
-	ANL A, #0xF0           ; nibble alto de la siguiente instruccion
+	ANL A, #0xF0                           ; nibble alto de la siguiente instruccion
 	RET
 MIRAR_FIN:
-	MOV A, #F_FIN          ; se trata como una F
+	MOV A, #F_FIN                          ; se trata como una F
 	RET
 
 BIF_INS:
-	ACALL MIRAR_INS                        ; A = letra de la instruccion (nibble alto)
+	ACALL MIRAR_INS                        ; mira nibble alto de la instruccion siguiente...
 	CJNE A, #C_PROFUNDIDAD, BIF_NO_C
 	ACALL INS_VERTICAL                     ; C = ACC_4
 	MOV ESTADO, #0x01
@@ -607,7 +609,7 @@ BIF_NO_A:
 	SJMP BIF_HORIZONTAL                    ; D: horizontal
 BIF_NO_D:
 	CJNE A, #E_IZQUIERDA, BIF_EMERGER
-BIF_HORIZONTAL:                            ; A, D o E = ACC_6
+BIF_HORIZONTAL:                                ; A, D o E = ACC_6
 	MOV R0, PUNTERO                        ; vuelve a leer la instruccion completa
 	MOV A, @R0
 	ANL A, #0x0F                           ; nibble bajo = segundos
@@ -615,7 +617,7 @@ BIF_HORIZONTAL:                            ; A, D o E = ACC_6
 	ACALL INS_HORIZONTAL
 	MOV ESTADO, #0x02
 	RET
-BIF_EMERGER:                               ; F, 0 segundos o invalida = ACC_5
+BIF_EMERGER:                                   ; F, 0 segundos o invalida = ACC_5
 	ACALL INS_EMERGER
 	MOV ESTADO, #0x01
 	RET
