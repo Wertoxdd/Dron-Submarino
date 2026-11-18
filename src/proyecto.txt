@@ -330,7 +330,7 @@ ME2_EV_3:
 
 ME2_EV_4:
 	MOV A, TIEMPO
-	JZ  FIN_ACCION             ; sirve en caso de que pongan una instruccion de 0 segundos...
+	JZ  FIN_ACCION             ; proteccion extra: BIF_INS ya no deja empezar una accion de 0 segundos
 	CJNE A, #0x01, DESCONTAR   ; TIEMPO != 1 se decrementa en 1
 FIN_ACCION:
 	ACALL BIF_INS              ; si TIEMPO es igual a 0 o 1 se pasa a la siguiente instruccion
@@ -608,14 +608,15 @@ BIF_NO_A:
 BIF_NO_D:
 	CJNE A, #E_IZQUIERDA, BIF_EMERGER
 BIF_HORIZONTAL:                            ; A, D o E = ACC_6
+	MOV R0, PUNTERO                        ; vuelve a leer la instruccion completa
+	MOV A, @R0
+	ANL A, #0x0F                           ; nibble bajo = segundos
+	JZ BIF_EMERGER                         ; 0 segundos (A0, D0, E0) => invalida, emerger
 	ACALL INS_HORIZONTAL
 	MOV ESTADO, #0x02
 	RET
-BIF_EMERGER:                               ; F o invalida = ACC_5
-	MOV A, @R0
-	ANL A, #0x0F
-	JZ BIF_EMERGER
-	ACALL INS_HORIZONTAL
+BIF_EMERGER:                               ; F, 0 segundos o invalida = ACC_5
+	ACALL INS_EMERGER
 	MOV ESTADO, #0x01
 	RET
 
