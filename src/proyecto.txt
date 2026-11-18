@@ -402,9 +402,9 @@ INICIALIZACIONES:
 	ACALL INICIALIZAR_VBLES
 	ACALL INICIALIZAR_SALIDAS
 	ACALL INICIALIZAR_PUERTOS
+	ACALL INICIALIZAR_INT
 	ACALL INICIALIZAR_TIMER
 	ACALL INICIALIZAR_ADC
-	ACALL INICIALIZAR_INT
 	RET
 
 INICIALIZAR_VBLES:
@@ -438,6 +438,13 @@ INICIALIZAR_PUERTOS:
 	SETB P3.2
 	RET
 
+INICIALIZAR_INT:
+	SETB INT0                       ; INT0 por flanco de bajada
+	SETB ET0                        ; timer 0: siempre activo
+	SETB EX0                        ; boton: el dron arranca en superficie
+	SETB EA                         ; habilitar las interrupciones generales
+	RET
+
 INICIALIZAR_TIMER:
 	MOV TMOD, #0x01	                ; timer 0 en modo 1 (16 bits), reloj interno y sin GATE
 	MOV TH0, #TH_RECARGA            ; primera carga del timer
@@ -447,15 +454,8 @@ INICIALIZAR_TIMER:
 
 INICIALIZAR_ADC:
 	MOV ADCON, #0x00                ; canal 0 por defecto... la primera medida va a ser siempre PROF
+	ACALL MEDIR
 	RET
-
-INICIALIZAR_INT:
-	SETB IT0                        ; INT0 por flanco de bajada
-	SETB ET0                        ; timer 0: siempre activo
-	SETB EX0                        ; boton: el dron arranca en superficie
-	SETB EA                         ; habilitar las interrupciones generales
-	RET
-
 
 ;---------------------------------------------------------------------------------------------
 ; SUBRUTINAS
