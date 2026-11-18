@@ -348,7 +348,8 @@ INICIAR:                               ; ACC_2 -
 	CLR EX0                            ; sumergido: el boton no se atiende
 	ANL ADCON, #0xE0                   ; borra un ADCI que haya quedado pendiente
 	CLR BIT_CANAL                      ; la primera medida sera la profundidad
-	SETB IE.6                          ; EAD: empieza a medir
+	SETB IE.6                          ; EAD: activa interrupciones del ADC
+	ACALL MEDIR
 	CLR LED_FIN                        ; apagar los LED al iniciar el recorrido
 	CLR LED_OBST                       ;
 	MOV PWMP, #PWM_PRESC               ; se recarga el PWM
@@ -523,6 +524,9 @@ PREP_HORIZONTAL:
 	MOV A, INSTR
 	MOV ACCION, A             ; A, D o E
 	MOV A, PARAM
+	CLR C
+	SUBB #0x00
+	JZ EMERGER
 	MOV TIEMPO, A             ; segundos de la accion
 	MOV CONT_TICKS, #TICKS_SEC ; el primer segundo empieza ahora
 	CLR FLAG_1S
