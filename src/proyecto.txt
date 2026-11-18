@@ -440,7 +440,7 @@ INICIALIZAR_PUERTOS:
 	RET
 
 INICIALIZAR_INT:
-	SETB INT0                       ; INT0 por flanco de bajada
+	SETB IT0                       ; INT0 por flanco de bajada
 	SETB ET0                        ; timer 0: siempre activo
 	SETB EX0                        ; boton: el dron arranca en superficie
 	SETB EA                         ; habilitar las interrupciones generales
@@ -524,9 +524,6 @@ PREP_HORIZONTAL:
 	MOV A, INSTR
 	MOV ACCION, A             ; A, D o E
 	MOV A, PARAM
-	CLR C
-	SUBB #0x00
-	JZ EMERGER
 	MOV TIEMPO, A             ; segundos de la accion
 	MOV CONT_TICKS, #TICKS_SEC ; el primer segundo empieza ahora
 	CLR FLAG_1S
@@ -615,7 +612,10 @@ BIF_HORIZONTAL:                            ; A, D o E = ACC_6
 	MOV ESTADO, #0x02
 	RET
 BIF_EMERGER:                               ; F o invalida = ACC_5
-	ACALL INS_EMERGER
+	MOV A, @R0
+	ANL A, #0x0F
+	JZ BIF_EMERGER
+	ACALL INS_HORIZONTAL
 	MOV ESTADO, #0x01
 	RET
 
