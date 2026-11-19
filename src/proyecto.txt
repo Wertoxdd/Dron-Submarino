@@ -66,8 +66,8 @@ PWM0 EQU 0xFC                ; duty cycle de las helices de profundidad
 PWM1 EQU 0xFD                ; duty cycle de las helices de giro/avance
 PWMP EQU 0xFE                ; prescaler del PWM (frecuencia)
 
-; valores de los registros
-PWM_PARADO EQU 0x00          ; 0 %
+; valores de los registros - LOS PWM0 ESTAN INVERTIDOS (NO SE HA USADO LA FORMULA DEL DATASHEET)
+PWM_PARADO EQU 0x00          ; 0 % 
 PWM_MANTENER EQU 0x4D        ; 30 % (PWM0)
 PWM_VERTICAL EQU 0xB3        ; 70 % (PWM0)
 PWM_AVANCE EQU 0x80          ; 50 % (PWM1)
